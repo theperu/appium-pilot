@@ -10,10 +10,31 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Marco Perugini" }]
+keywords = ["appium", "mobile", "automation", "cli", "android", "ios", "testing", "agent", "llm"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
     "Appium-Python-Client>=4.0.0",
     "selenium>=4.20.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/theperu/appium-pilot"
+Repository = "https://github.com/theperu/appium-pilot"
+Issues = "https://github.com/theperu/appium-pilot/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff"]
