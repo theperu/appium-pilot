@@ -1,0 +1,16 @@
+<hierarchy rotation="0">
+  <android.widget.FrameLayout resource-id="android:id/content">
+    <android.widget.LinearLayout resource-id="com.x:id/wrap">
+      <androidx.recyclerview.widget.RecyclerView resource-id="com.x:id/list" scrollable="true">
+        <android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">
+          <android.widget.TextView resource-id="android:id/title" text="Views"/>
+        </android.widget.LinearLayout>
+        <android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">
+          <android.widget.TextView resource-id="android:id/title" text="Text"/>
+        </android.widget.LinearLayout>
+      </androidx.recyclerview.widget.RecyclerView>
+      <android.widget.ImageButton resource-id="com.x:id/fab" content-desc="Add"/>
+      <android.widget.EditText resource-id="com.x:id/search" text="Search"/>
+    </android.widget.LinearLayout>
+  </android.widget.FrameLayout>
+</hierarchy>

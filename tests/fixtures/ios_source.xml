@@ -1,0 +1,10 @@
+<XCUIElementTypeApplication name="TestApp" label="TestApp" visible="true">
+  <XCUIElementTypeWindow visible="true">
+    <XCUIElementTypeTextField name="IntegerA" label="IntegerA" value="5" visible="true"/>
+    <XCUIElementTypeTextField name="IntegerB" label="IntegerB" visible="true"/>
+    <XCUIElementTypeSearchField name="Query" label="Query" visible="true"/>
+    <XCUIElementTypeButton name="Query" label="Clear" visible="true"/>
+    <XCUIElementTypeStaticText name="result" label="" value="42" visible="true"/>
+    <XCUIElementTypeOther label="hidden noise" visible="false"/>
+  </XCUIElementTypeWindow>
+</XCUIElementTypeApplication>

@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "appium-pilot"
+version = "0.1.0"
+description = "Agent-first, session-based CLI for driving mobile apps via Appium"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Marco Perugini" }]
+dependencies = [
+    "Appium-Python-Client>=4.0.0",
+    "selenium>=4.20.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff"]
+
+[project.scripts]
+appium-pilot = "appium_pilot.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -m 'not e2e'"
+markers = [
+    "e2e: device-backed end-to-end test (needs a simulator/emulator)",
+    "ios: iOS-specific test",
+    "android: Android-specific test",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/appium_pilot"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/appium_pilot/skilldata/SKILL.md" = "appium_pilot/skilldata/SKILL.md"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"

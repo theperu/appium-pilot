@@ -1,0 +1,86 @@
+"""Build the filtered-XML snapshot and the ref -> locator map.
+
+We walk the live page source, keep only nodes the strategy deems meaningful,
+collapse non-meaningful wrapper chains (their kept descendants bubble up to the
+nearest kept ancestor), inject `ref` attributes, and serialize a compact XML.
+Each kept node also records its best locator so later commands can re-find it.
+"""
+
+from __future__ import annotations
+
+import xml.etree.ElementTree as ET
+from dataclasses import dataclass, field
+from typing import Optional
+
+from appium_pilot.strategies import Locator, PlatformStrategy
+
+
+@dataclass
+class PNode:
+    ref: str
+    tag: str
+    attrs: dict
+    children: list["PNode"] = field(default_factory=list)
+
+
+def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, dict[str, Locator]]:
+    """Return (filtered_xml, refmap)."""
+    root = ET.fromstring(page_source)
+    refmap: dict[str, Locator] = {}
+    counter = [0]
+
+    def walk(el: ET.Element, path: str) -> list[PNode]:
+        node: Optional[PNode] = None
+        if strategy.is_meaningful(el):
+            counter[0] += 1
+            ref = f"e{counter[0]}"
+            xpath = path or f"/{strategy.effective_tag(el)}"
+            # Expose the element's class/type to the strategy (iOS carries it as the
+            # tag, not an attribute) so locators can disambiguate by type.
+            attrs = dict(el.attrib)
+            attrs.setdefault("type", strategy.effective_tag(el))
+            refmap[ref] = strategy.best_locator(attrs, xpath)
+            node = PNode(ref=ref, tag=strategy.effective_tag(el), attrs=strategy.kept_attrs(attrs))
+
+        child_nodes: list[PNode] = []
+        sibling_counts: dict[str, int] = {}
+        for child in list(el):
+            ctag = strategy.effective_tag(child)
+            sibling_counts[ctag] = sibling_counts.get(ctag, 0) + 1
+            cpath = f"{path}/{ctag}[{sibling_counts[ctag]}]"
+            child_nodes += walk(child, cpath)
+
+        if node is not None:
+            node.children = child_nodes
+            return [node]
+        return child_nodes  # collapse: bubble kept descendants up
+
+    root_path = f"/{strategy.effective_tag(root)}"
+    top = walk(root, root_path)
+    xml = _serialize(top)
+    return xml, refmap
+
+
+def _serialize(nodes: list[PNode], indent: int = 0) -> str:
+    lines: list[str] = []
+    pad = "  " * indent
+    for n in nodes:
+        attr_str = "".join(f' {k}="{_esc(v)}"' for k, v in n.attrs.items())
+        open_tag = f'{pad}<{n.tag} ref="{n.ref}"{attr_str}'
+        if n.children:
+            lines.append(open_tag + ">")
+            lines.append(_serialize(n.children, indent + 1))
+            lines.append(f"{pad}</{n.tag}>")
+        else:
+            lines.append(open_tag + "/>")
+    return "\n".join(line for line in lines if line)
+
+
+def _esc(value: str) -> str:
+    return (
+        str(value)
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
