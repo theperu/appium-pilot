@@ -16,5 +16,9 @@ tests/_apps/
 .vscode/
 .idea/
 
+# Claude Code local config
+.claude/
+CLAUDE.md
+
 # internal notes (not tracked)
 /notes/
