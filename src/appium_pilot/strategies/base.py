@@ -44,6 +44,15 @@ class PlatformStrategy(ABC):
         """
         return el.attrib.get("class") or el.tag
 
+    def short_tag(self, tag: str) -> str:
+        """Presentation-only shortening of the tag shown in the snapshot XML.
+
+        The full class name still backs the locator (see best_locator); this
+        only trims what the agent reads, where the package/type prefix carries
+        no signal and tokenizes poorly. Overridden per platform.
+        """
+        return tag
+
     @abstractmethod
     def is_meaningful(self, el: ET.Element) -> bool:
         """Whether this node survives the filtered snapshot (gets a ref)."""
@@ -59,6 +68,19 @@ class PlatformStrategy(ABC):
     @abstractmethod
     def kept_attrs(self, attrs: dict) -> dict:
         """Attributes worth keeping in the filtered XML (token economy)."""
+
+    def try_fold(self, parent, child) -> Optional[str]:  # noqa: ANN001 — PNode (import cycle)
+        """Fold a lone non-interactive text child into its tappable parent.
+
+        A clickable row/button wrapping a single label is one semantic thing;
+        emitting both wastes a ref + line per list row. On success, mutate
+        `parent.attrs` (absorb the child's text) and return which node's
+        locator should back the merged ref: "parent" (parent already has a
+        strong accessibility-based locator) or "child" (the text element is
+        the reliably findable one — tapping its center hits the parent anyway).
+        Return None to keep both nodes. Overridden per platform.
+        """
+        return None
 
     # ---- gestures (divergent; native primary, coordinate fallback) --------
 

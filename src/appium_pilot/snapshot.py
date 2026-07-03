@@ -40,7 +40,9 @@ def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, d
             attrs = dict(el.attrib)
             attrs.setdefault("type", strategy.effective_tag(el))
             refmap[ref] = strategy.best_locator(attrs, xpath)
-            node = PNode(ref=ref, tag=strategy.effective_tag(el), attrs=strategy.kept_attrs(attrs))
+            # Locator uses the full class (above); the emitted tag is shortened.
+            tag = strategy.short_tag(strategy.effective_tag(el))
+            node = PNode(ref=ref, tag=tag, attrs=strategy.kept_attrs(attrs))
 
         child_nodes: list[PNode] = []
         sibling_counts: dict[str, int] = {}
@@ -57,8 +59,41 @@ def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, d
 
     root_path = f"/{strategy.effective_tag(root)}"
     top = walk(root, root_path)
+    _fold(top, strategy, refmap)
+    refmap = _renumber(top, refmap)
     xml = _serialize(top)
     return xml, refmap
+
+
+def _fold(nodes: list[PNode], strategy: PlatformStrategy, refmap: dict[str, Locator]) -> None:
+    """Merge lone text leaves into their tappable parent (strategy.try_fold)."""
+    for n in nodes:
+        _fold(n.children, strategy, refmap)
+        if len(n.children) == 1 and not n.children[0].children:
+            child = n.children[0]
+            keep = strategy.try_fold(n, child)
+            if keep is not None:
+                if keep == "child":
+                    refmap[n.ref] = refmap[child.ref]
+                del refmap[child.ref]
+                n.children = []
+
+
+def _renumber(nodes: list[PNode], refmap: dict[str, Locator]) -> dict[str, Locator]:
+    """Re-assign e1..eN in document order after folding, keeping refs gap-free."""
+    out: dict[str, Locator] = {}
+    counter = [0]
+
+    def visit(ns: list[PNode]) -> None:
+        for n in ns:
+            counter[0] += 1
+            new_ref = f"e{counter[0]}"
+            out[new_ref] = refmap[n.ref]
+            n.ref = new_ref
+            visit(n.children)
+
+    visit(nodes)
+    return out
 
 
 def _serialize(nodes: list[PNode], indent: int = 0) -> str:

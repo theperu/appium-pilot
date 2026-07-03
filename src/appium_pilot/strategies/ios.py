@@ -29,8 +29,19 @@ INTERACTIVE_TYPES = {
 }
 
 
+# Post-short_tag names, for try_fold (which sees shortened PNodes).
+_INTERACTIVE_SHORT = {t.removeprefix("XCUIElementType") for t in INTERACTIVE_TYPES}
+_FOLD_PARENTS = {"Cell", "Button", "Link"}
+
+
 class IOSStrategy(PlatformStrategy):
     platform = "ios"
+
+    def short_tag(self, tag: str) -> str:
+        # Strip the ubiquitous XCUIElementType prefix: it's on every node and
+        # tokenizes poorly. XCUIElementTypeButton -> Button.
+        prefix = "XCUIElementType"
+        return tag[len(prefix):] if tag.startswith(prefix) else tag
 
     def is_meaningful(self, el: ET.Element) -> bool:
         a = el.attrib
@@ -64,15 +75,39 @@ class IOSStrategy(PlatformStrategy):
 
     def kept_attrs(self, attrs: dict) -> dict:
         out: dict = {}
-        if attrs.get("name"):
-            out["name"] = attrs["name"]
-        if attrs.get("label"):
-            out["label"] = attrs["label"]
+        name = attrs.get("name")
+        label = attrs.get("label")
+        if name:
+            out["name"] = name
+        # iOS very often sets label == name; the duplicate is pure token waste.
+        if label and label != name:
+            out["label"] = label
         if attrs.get("value"):
             out["value"] = attrs["value"]
         if attrs.get("enabled") == "false":
             out["enabled"] = "false"
         return out
+
+    def try_fold(self, parent, child):  # noqa: ANN001
+        # Cells/Buttons/Links wrapping a single StaticText-style label are one
+        # tappable thing (a Button's label is routinely duplicated as a child).
+        if parent.tag not in _FOLD_PARENTS:
+            return None
+        if child.tag in _INTERACTIVE_SHORT:
+            return None
+        text = child.attrs.get("label") or child.attrs.get("name")
+        if not text:
+            return None
+        own = parent.attrs.get("label") or parent.attrs.get("name")
+        if own not in (None, text):
+            return None  # parent has its own, different label — keep both nodes
+        if not own:
+            parent.attrs["label"] = text
+        if child.attrs.get("value") and not parent.attrs.get("value"):
+            parent.attrs["value"] = child.attrs["value"]
+        # A parent name backs a type+name predicate (strong); otherwise the
+        # child's label-based locator is the reliably findable one.
+        return "parent" if parent.attrs.get("name") else "child"
 
     # ---- gestures ---------------------------------------------------------
 

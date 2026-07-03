@@ -48,8 +48,18 @@ LAYOUT_CLASSES = {
 }
 
 
+# Short (displayed) names of INTERACTIVE_CLASSES — used by try_fold, which sees
+# post-short_tag PNodes.
+_INTERACTIVE_SHORT = {c.rsplit(".", 1)[-1] for c in INTERACTIVE_CLASSES}
+
+
 class AndroidStrategy(PlatformStrategy):
     platform = "android"
+
+    def short_tag(self, tag: str) -> str:
+        # Drop the package path: android.widget.TextView -> TextView. The full
+        # class stays in the locator; the agent acts by ref, not class name.
+        return tag.rsplit(".", 1)[-1]
 
     def is_meaningful(self, el: ET.Element) -> bool:
         a = el.attrib
@@ -95,12 +105,35 @@ class AndroidStrategy(PlatformStrategy):
         if attrs.get("content-desc"):
             out["desc"] = attrs["content-desc"]
         if attrs.get("resource-id"):
-            out["id"] = attrs["resource-id"]
+            # Display-only: `com.x:id/row` -> `row`. The locator (best_locator)
+            # keeps the full resource-id; the shown id is informational and the
+            # package prefix repeats on every node for no signal.
+            out["id"] = attrs["resource-id"].split(":id/", 1)[-1]
         if _truthy(attrs.get("clickable")):
             out["clickable"] = "true"
         if attrs.get("enabled") == "false":
             out["enabled"] = "false"
         return out
+
+    def try_fold(self, parent, child):  # noqa: ANN001
+        # Only fold a lone text/desc leaf into a clickable container; never fold
+        # anything interactive in its own right (inputs, buttons, ...).
+        if parent.attrs.get("clickable") != "true":
+            return None
+        if child.attrs.get("clickable") or child.tag in _INTERACTIVE_SHORT:
+            return None
+        text, desc = child.attrs.get("text"), child.attrs.get("desc")
+        if not (text or desc):
+            return None
+        if text and parent.attrs.get("text") not in (None, text):
+            return None  # parent has its own, different text — keep both nodes
+        if text:
+            parent.attrs["text"] = text
+        if desc and not parent.attrs.get("desc"):
+            parent.attrs["desc"] = desc
+        # A parent content-desc backs an accessibility-id locator (strongest);
+        # otherwise the child's text-based locator is the reliably findable one.
+        return "parent" if parent.attrs.get("desc") else "child"
 
     # ---- gestures ---------------------------------------------------------
 

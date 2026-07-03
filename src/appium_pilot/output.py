@@ -28,7 +28,7 @@ def json_mode() -> bool:
 def emit(message: str, **data: Any) -> None:
     """Report success. `message` is the human one-liner; `data` is the JSON payload."""
     if JSON_MODE:
-        print(json.dumps({"ok": True, "message": message, **data}))
+        print(json.dumps({"ok": True, "message": message, **data}, separators=(",", ":")))
     else:
         print(message)
 
@@ -36,7 +36,7 @@ def emit(message: str, **data: Any) -> None:
 def raw(text: str) -> None:
     """Print payload text verbatim (e.g. a snapshot's XML), no JSON wrapping."""
     if JSON_MODE:
-        print(json.dumps({"ok": True, "data": text}))
+        print(json.dumps({"ok": True, "data": text}, separators=(",", ":")))
     else:
         sys.stdout.write(text)
         if not text.endswith("\n"):
@@ -46,7 +46,7 @@ def raw(text: str) -> None:
 def fail(message: str, code: int = 1, **data: Any) -> NoReturn:
     """Report an error to stderr and exit nonzero."""
     if JSON_MODE:
-        print(json.dumps({"ok": False, "error": message, **data}), file=sys.stderr)
+        print(json.dumps({"ok": False, "error": message, **data}, separators=(",", ":")), file=sys.stderr)
     else:
         print(f"error: {message}", file=sys.stderr)
     sys.exit(code)

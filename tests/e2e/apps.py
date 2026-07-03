@@ -83,7 +83,8 @@ class AndroidApp:
         cli.run("wait", "--text", "Light Theme", "--timeout", "10")
         cli.run("tap", cli.ref_for(r'text="1\. Light Theme"'))
         cli.run("wait", "--text", "hint text", "--timeout", "10")
-        return cli.ref_for(r'id="io\.appium\.android\.apis:id/edit"')
+        # Snapshot ids are shown package-stripped (io.appium.android.apis:id/edit -> edit).
+        return cli.ref_for(r'id="edit"')
 
     type_value = "hello"
 

@@ -17,10 +17,10 @@ def test_android_pruning_and_refs():
     xml, refmap = build_snapshot((FIX / "android_source.xml").read_text(), get_strategy("android"))
     # Pure layout containers carrying only a resource-id are dropped.
     assert "android:id/content" not in xml
-    assert "com.x:id/wrap" not in xml
+    assert 'id="wrap"' not in xml
     # Real content survives: scrollable list, clickable rows, row titles, button, input.
     assert 'text="Views"' in xml and 'text="Text"' in xml
-    assert "com.x:id/search" in xml  # the EditText
+    assert 'id="search"' in xml  # the EditText (resource-id shown package-stripped)
     assert _refs_are_sequential(refmap)
 
 
@@ -38,3 +38,88 @@ def test_refs_resolve_to_locators():
     _, refmap = build_snapshot((FIX / "android_source.xml").read_text(), get_strategy("android"))
     # Every ref in the map carries a usable locator.
     assert all(loc.by and loc.value for loc in refmap.values())
+
+
+def test_android_tags_shortened():
+    xml, _ = build_snapshot((FIX / "android_source.xml").read_text(), get_strategy("android"))
+    # Emitted tags drop the package path; the agent reads <EditText>, not FQCN.
+    assert "<RecyclerView" in xml and "<EditText" in xml and "<ImageButton" in xml
+    assert "android.widget" not in xml and "androidx.recyclerview" not in xml
+
+
+def test_android_shortened_tag_does_not_corrupt_xpath_locator():
+    # A bare interactive node with no id/text/desc falls to the path xpath; the
+    # emitted tag is shortened, but that xpath must keep the full class name.
+    src = "<hierarchy><android.widget.Button/></hierarchy>"
+    xml, refmap = build_snapshot(src, get_strategy("android"))
+    assert "<Button" in xml and "android.widget" not in xml
+    (loc,) = refmap.values()
+    assert loc.by == "xpath" and "android.widget.Button" in loc.value
+
+
+def test_ios_tags_shortened():
+    xml, _ = build_snapshot((FIX / "ios_source.xml").read_text(), get_strategy("ios"))
+    assert "<Button" in xml and "<TextField" in xml and "<SearchField" in xml
+    assert "XCUIElementType" not in xml
+
+
+def test_ios_label_dropped_when_equal_to_name_kept_when_different():
+    xml, _ = build_snapshot((FIX / "ios_source.xml").read_text(), get_strategy("ios"))
+    # IntegerA has name == label -> the duplicate label is dropped.
+    assert 'name="IntegerA"' in xml
+    assert 'label="IntegerA"' not in xml
+    # The button has name="Query" label="Clear" -> both are meaningful, both kept.
+    assert 'label="Clear"' in xml
+
+
+def test_android_clickable_row_folds_single_text_child():
+    xml, refmap = build_snapshot((FIX / "android_source.xml").read_text(), get_strategy("android"))
+    # Each clickable row wrapping one TextView collapses to a single node...
+    assert "<TextView" not in xml
+    assert '<LinearLayout ref="e2" id="row" clickable="true" text="Views"/>' in xml
+    # ...whose ref resolves via the (text-bearing) child's locator.
+    assert "Views" in refmap["e2"].value
+    assert _refs_are_sequential(refmap)
+
+
+def test_android_fold_skips_interactive_children():
+    src = (
+        "<hierarchy>"
+        '<android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">'
+        '<android.widget.EditText resource-id="com.x:id/field" text="hi"/>'
+        "</android.widget.LinearLayout>"
+        "</hierarchy>"
+    )
+    xml, _ = build_snapshot(src, get_strategy("android"))
+    # An input is interactive in its own right — never folded away.
+    assert "<EditText" in xml
+
+
+def test_ios_cell_folds_single_static_text():
+    src = (
+        '<XCUIElementTypeApplication name="App" visible="true">'
+        '<XCUIElementTypeCell visible="true">'
+        '<XCUIElementTypeStaticText label="Settings" visible="true"/>'
+        "</XCUIElementTypeCell>"
+        "</XCUIElementTypeApplication>"
+    )
+    xml, refmap = build_snapshot(src, get_strategy("ios"))
+    assert "<StaticText" not in xml
+    assert '<Cell ref="e2" label="Settings"/>' in xml
+    assert "Settings" in refmap["e2"].value
+    assert _refs_are_sequential(refmap)
+
+
+def test_ios_button_drops_duplicate_label_child_keeps_own_locator():
+    src = (
+        '<XCUIElementTypeApplication name="App" visible="true">'
+        '<XCUIElementTypeButton name="submit" label="Submit" visible="true">'
+        '<XCUIElementTypeStaticText label="Submit" visible="true"/>'
+        "</XCUIElementTypeButton>"
+        "</XCUIElementTypeApplication>"
+    )
+    xml, refmap = build_snapshot(src, get_strategy("ios"))
+    # The duplicated child label vanishes; the button keeps its strong name locator.
+    assert xml.count("Submit") == 1
+    assert "submit" in refmap["e2"].value
+    assert _refs_are_sequential(refmap)
