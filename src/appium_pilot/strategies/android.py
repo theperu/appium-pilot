@@ -115,6 +115,17 @@ class AndroidStrategy(PlatformStrategy):
             out["enabled"] = "false"
         return out
 
+    def element_state(self, element) -> dict:  # noqa: ANN001
+        out = super().element_state(element)
+        # UiAutomator2 returns the literal string "null" for an absent attribute.
+        desc = element.get_attribute("content-desc")
+        if desc and desc != "null":
+            out["desc"] = desc
+        # Only report toggle state for things that toggle.
+        if element.get_attribute("checkable") == "true":
+            out["checked"] = element.get_attribute("checked") == "true"
+        return out
+
     def try_fold(self, parent, child):  # noqa: ANN001
         # Only fold a lone text/desc leaf into a clickable container; never fold
         # anything interactive in its own right (inputs, buttons, ...).

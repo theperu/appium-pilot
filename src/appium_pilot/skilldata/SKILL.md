@@ -44,10 +44,15 @@ appium-pilot snapshot --raw    # full unfiltered page source (when filtered hide
 appium-pilot source            # raw page source, no refs
 appium-pilot screenshot        # save PNG, prints path — then Read the file to view it
 appium-pilot screenshot e7     # screenshot just one element
+
+appium-pilot get e3            # a ref's current state, e.g. text="hi" enabled=true
+appium-pilot get e3 bounds     # read one raw attribute (bounds, focused, ...)
 ```
 
 Read an element by its attributes in the snapshot: `text`/`desc`/`id` on
-Android, `name`/`label`/`value` on iOS.
+Android, `name`/`label`/`value` on iOS. Use `get <ref>` to re-check one
+element's live state (e.g. confirm a field's text after `type`) without paying
+for a full re-`snapshot`.
 
 ## Recording
 

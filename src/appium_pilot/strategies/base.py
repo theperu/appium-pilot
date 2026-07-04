@@ -160,6 +160,18 @@ class PlatformStrategy(ABC):
     def dismiss_alert(self, driver) -> None:  # noqa: ANN001
         driver.switch_to.alert.dismiss()
 
+    # ---- live element state (for `get`) -----------------------------------
+
+    def element_state(self, element) -> dict:  # noqa: ANN001
+        """Current text + enabled state of an element. Overridden per platform
+        to add the attributes that matter there (value/checked/…). Each entry
+        is a live driver round-trip, so keep the set small."""
+        out: dict = {}
+        if element.text:
+            out["text"] = element.text
+        out["enabled"] = element.is_enabled()
+        return out
+
     def recording_options(self, time_limit: int, quality: str) -> dict:
         """Options for start_recording_screen. timeLimit is common to both drivers."""
         return {"timeLimit": str(time_limit)}

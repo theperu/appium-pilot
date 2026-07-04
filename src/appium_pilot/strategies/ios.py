@@ -88,6 +88,22 @@ class IOSStrategy(PlatformStrategy):
             out["enabled"] = "false"
         return out
 
+    def element_state(self, element) -> dict:  # noqa: ANN001
+        # iOS carries current input contents in `value` (what you type lands
+        # there), plus the static label; name is dropped when it duplicates label.
+        out: dict = {}
+        label = element.get_attribute("label")
+        value = element.get_attribute("value")
+        name = element.get_attribute("name")
+        if label:
+            out["label"] = label
+        if value:
+            out["value"] = value
+        if name and name != label:
+            out["name"] = name
+        out["enabled"] = element.is_enabled()
+        return out
+
     def try_fold(self, parent, child):  # noqa: ANN001
         # Cells/Buttons/Links wrapping a single StaticText-style label are one
         # tappable thing (a Button's label is routinely duplicated as a child).
