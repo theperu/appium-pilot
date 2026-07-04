@@ -68,6 +68,11 @@ def _parse_caps(pairs: list[str]) -> dict:
 
 
 def _coerce(value: str):
+    # Escape hatch: a value wrapped in quotes stays a string, no coercion — the
+    # way to force e.g. platformVersion to str "17" instead of int 17. Shells
+    # eat quotes, so the user passes --cap 'platformVersion="17"' to keep them.
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
     low = value.lower()
     if low in ("true", "false"):
         return low == "true"

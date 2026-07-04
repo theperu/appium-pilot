@@ -36,6 +36,9 @@ appium-pilot open --platform android --app-package com.x --cap appium:noReset=tr
 Platform is inferred from `--bundle-id` (ios), `--app-package` (android), or the
 app file extension; otherwise pass `--platform`.
 
+`--cap` values are coerced (`true`/`false` → bool, digits → int). To force a
+string, quote the value: `--cap 'platformVersion="17"'` keeps it as `"17"`.
+
 ## Inspecting
 
 ```bash

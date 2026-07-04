@@ -71,7 +71,10 @@ class AndroidApp:
         return _ensure_android_apk()
 
     def open_args(self, artifact: Path) -> list[str]:
-        return ["open", "--platform", "android", "--app", str(artifact), "--app-package", self.app_id]
+        # The quoted pilotProbe cap exercises the --cap force-string escape hatch
+        # (test_quoted_cap_persisted_as_string); it's a harmless unknown vendor cap.
+        return ["open", "--platform", "android", "--app", str(artifact),
+                "--app-package", self.app_id, "--cap", 'appium:pilotProbe="17"']
 
     def ready_ref(self, cli) -> str:
         return cli.ref_for(r'(text|desc)="Views"')
@@ -125,7 +128,9 @@ class IOSApp:
         return _ensure_ios_app()
 
     def open_args(self, artifact: Path) -> list[str]:
-        return ["open", "--platform", "ios", "--app", str(artifact), "--bundle-id", self.app_id]
+        # See AndroidApp.open_args re: the quoted pilotProbe force-string cap.
+        return ["open", "--platform", "ios", "--app", str(artifact),
+                "--bundle-id", self.app_id, "--cap", 'appium:pilotProbe="17"']
 
     def ready_ref(self, cli) -> str:
         return cli.ref_for(r'name="IntegerA"')

@@ -54,3 +54,13 @@ def test_coerce_types():
     assert _coerce("false") is False
     assert _coerce("42") == 42
     assert _coerce("hello") == "hello"
+
+
+def test_coerce_quoted_stays_string():
+    # Quoting is the escape hatch to keep a numeric/bool-looking cap as a string.
+    assert _coerce('"17"') == "17"
+    assert _coerce("'17'") == "17"
+    assert _coerce('"true"') == "true"   # string, not bool
+    assert _coerce('""') == ""
+    # A lone quote char is not a wrapped value.
+    assert _coerce('"') == '"'
