@@ -8,7 +8,7 @@ from appium_pilot.cli import _normalize_session_flag, build_parser
 
 EXPECTED = {
     "open", "close", "snapshot", "source", "screenshot", "tap", "type", "clear", "get",
-    "swipe", "scroll", "press", "hide-keyboard", "wait", "alert", "video-start", "video-stop",
+    "swipe", "scroll", "press", "hide-keyboard", "wait", "alert", "url", "video-start", "video-stop",
     "launch", "activate", "terminate", "background", "install", "remove", "reset",
     "orientation", "devices", "list", "close-all", "kill-all", "skills", "doctor",
 }
@@ -31,7 +31,7 @@ def test_all_subcommands_registered():
     ["alert"], ["alert", "accept"], ["alert", "dismiss"],
     ["get", "e1"], ["get", "e1", "bounds"],
     ["tap", "--text", "Login"], ["tap", "--at", "10,20"], ["tap", "e1", "--long"],
-    ["tap", "e1", "--double"],
+    ["tap", "e1", "--double"], ["url", "myapp://x/1"],
 ])
 def test_known_commands_parse(argv):
     args = build_parser().parse_args(argv)

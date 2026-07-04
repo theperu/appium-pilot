@@ -27,6 +27,7 @@ from appium_pilot.commands import (
     snapshot_cmd,
     tap_cmd,
     type_cmd,
+    url_cmd,
     video_cmd,
     wait_cmd,
 )
@@ -52,6 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
         get_cmd,
         gesture_cmd,
         wait_cmd,
+        url_cmd,
         alert_cmd,
         video_cmd,
         app_cmd,

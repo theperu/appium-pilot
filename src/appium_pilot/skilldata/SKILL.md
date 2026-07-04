@@ -120,7 +120,12 @@ appium-pilot launch | terminate | reset      # acts on the session's app
 appium-pilot background 5                     # background for N seconds (-1 = indefinitely)
 appium-pilot install /path/to/app            # install an artifact
 appium-pilot remove com.example.app          # uninstall
+appium-pilot url "myapp://profile/42"        # open a deep link (jump straight to a screen)
 ```
+
+`url` fires a deep-link intent at the app under test on Android
+(`mobile: deepLink`) and lets iOS route the URL by scheme (custom → the app,
+http(s) → Safari). After `snapshot` again — the screen changed.
 
 ## Sessions & environment
 

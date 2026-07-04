@@ -189,6 +189,13 @@ class AndroidStrategy(PlatformStrategy):
         except Exception:  # noqa: BLE001
             return None
 
+    def open_url(self, driver, url, app_id=None) -> None:  # noqa: ANN001
+        # mobile: deepLink fires an ACTION_VIEW intent at a specific package, so
+        # it needs one; the app under test is the natural target.
+        if not app_id:
+            raise CommandError("deep link on Android needs the app package; reopen with --app-package")
+        driver.execute_script("mobile: deepLink", {"url": url, "package": app_id})
+
     def press_key(self, driver, key: str) -> None:  # noqa: ANN001
         code = KEYCODES.get(key.lower())
         if code is None and key.isdigit():

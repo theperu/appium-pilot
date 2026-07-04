@@ -141,6 +141,10 @@ class PlatformStrategy(ABC):
         """Scroll until an element containing `text` is found; return it or None."""
 
     @abstractmethod
+    def open_url(self, driver, url: str, app_id: Optional[str] = None) -> None:  # noqa: ANN001
+        """Open a deep link / URL to jump straight to a screen."""
+
+    @abstractmethod
     def press_key(self, driver, key: str) -> None:  # noqa: ANN001
         """Press a hardware/system key (back/home/enter/...)."""
 

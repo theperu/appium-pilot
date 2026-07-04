@@ -156,6 +156,11 @@ class IOSStrategy(PlatformStrategy):
                 driver.execute_script("mobile: swipe", {"direction": direction})
         return None
 
+    def open_url(self, driver, url, app_id=None) -> None:  # noqa: ANN001
+        # XCUITest opens the URL via the system handler (custom scheme → the app,
+        # http(s) → Safari). app_id is unused; the URL's scheme picks the target.
+        driver.get(url)
+
     def press_key(self, driver, key: str) -> None:  # noqa: ANN001
         k = key.lower()
         if k == "home":
