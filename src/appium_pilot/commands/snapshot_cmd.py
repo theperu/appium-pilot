@@ -12,6 +12,8 @@ from appium_pilot.snapshot import build_snapshot
 def add_parser(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser("snapshot", help="capture the current screen + element refs")
     p.add_argument("--raw", action="store_true", help="dump full unfiltered page source")
+    p.add_argument("--bounds", action="store_true",
+                   help='add each element\'s center as at="x,y" (for tap --at / screenshots)')
     p.set_defaults(func=run)
 
 
@@ -24,7 +26,7 @@ def run(args) -> None:
         raw(page_source)
         return
 
-    xml, refmap = build_snapshot(page_source, session.strategy)
+    xml, refmap = build_snapshot(page_source, session.strategy, with_bounds=args.bounds)
     session.set_refmap(refmap)
     session.save()
 

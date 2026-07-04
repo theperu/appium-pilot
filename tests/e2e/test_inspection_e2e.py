@@ -57,3 +57,20 @@ def test_get_single_attribute(fresh, app):
     ref = app.ready_ref(fresh)
     rc, out, _ = fresh.run("get", ref, "enabled")
     assert rc == 0 and "true" in out.lower()
+
+
+# --- snapshot --bounds: opt-in pixel centers (§2.5) ------------------------
+
+def test_snapshot_bounds_adds_center(fresh):
+    withb = fresh.run("snapshot", "--bounds")[1]
+    assert ' at="' in withb
+    # Plain snapshot stays lean — no centers.
+    assert ' at="' not in fresh.snapshot()
+
+
+def test_bounds_center_is_tappable(fresh):
+    import re
+    out = fresh.run("snapshot", "--bounds")[1]
+    m = re.search(r'at="(\d+),(\d+)"', out)
+    assert m, "no center emitted"
+    assert fresh.run("tap", "--at", f"{m.group(1)},{m.group(2)}", check=False)[0] == 0

@@ -41,6 +41,7 @@ app file extension; otherwise pass `--platform`.
 ```bash
 appium-pilot snapshot          # filtered XML + refs (use this, not --raw, by default)
 appium-pilot snapshot --raw    # full unfiltered page source (when filtered hides something)
+appium-pilot snapshot --bounds # add each element's center as at="x,y" (feed tap --at / a screenshot)
 appium-pilot source            # raw page source, no refs
 appium-pilot screenshot        # save PNG, prints path — then Read the file to view it
 appium-pilot screenshot e7     # screenshot just one element

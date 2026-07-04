@@ -68,6 +68,15 @@ class PlatformStrategy(ABC):
     def best_locator(self, attrs: dict, xpath: str) -> Locator:
         """Most robust locator for the node, per platform preference order."""
 
+    def center(self, attrs: dict) -> Optional[tuple[int, int]]:
+        """Pixel center (x, y) of a node from its raw attributes, or None.
+
+        Used only by `snapshot --bounds` to let agents correlate refs with a
+        screenshot and drive `tap --at`. Overridden per platform (the geometry
+        attributes differ); default None so a new platform degrades gracefully.
+        """
+        return None
+
     @staticmethod
     def xpath_locator(xpath: str, text: str = "") -> Locator:
         """Positional fallback locator (used to break locator collisions).

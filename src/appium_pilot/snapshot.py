@@ -21,11 +21,15 @@ class PNode:
     tag: str
     attrs: dict
     xpath: str = ""  # unique indexed path; the collision-breaking fallback locator
+    center: Optional[tuple[int, int]] = None  # pixel center, for --bounds
     children: list["PNode"] = field(default_factory=list)
 
 
-def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, dict[str, Locator]]:
-    """Return (filtered_xml, refmap)."""
+def build_snapshot(
+    page_source: str, strategy: PlatformStrategy, with_bounds: bool = False
+) -> tuple[str, dict[str, Locator]]:
+    """Return (filtered_xml, refmap). With `with_bounds`, each node also carries
+    an ``at="cx,cy"`` pixel center (opt-in; costs tokens)."""
     root = ET.fromstring(page_source)
     refmap: dict[str, Locator] = {}
     counter = [0]
@@ -43,7 +47,8 @@ def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, d
             refmap[ref] = strategy.best_locator(attrs, xpath)
             # Locator uses the full class (above); the emitted tag is shortened.
             tag = strategy.short_tag(strategy.effective_tag(el))
-            node = PNode(ref=ref, tag=tag, attrs=strategy.kept_attrs(attrs), xpath=xpath)
+            node = PNode(ref=ref, tag=tag, attrs=strategy.kept_attrs(attrs), xpath=xpath,
+                         center=strategy.center(attrs))
 
         child_nodes: list[PNode] = []
         sibling_counts: dict[str, int] = {}
@@ -63,7 +68,7 @@ def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, d
     _fold(top, strategy, refmap)
     refmap = _renumber(top, refmap)
     _dedupe(top, strategy, refmap)
-    xml = _serialize(top)
+    xml = _serialize(top, with_bounds=with_bounds)
     return xml, refmap
 
 
@@ -127,15 +132,16 @@ def _dedupe(nodes: list[PNode], strategy: PlatformStrategy, refmap: dict[str, Lo
                 refmap[n.ref] = strategy.xpath_locator(n.xpath, refmap[n.ref].text)
 
 
-def _serialize(nodes: list[PNode], indent: int = 0) -> str:
+def _serialize(nodes: list[PNode], indent: int = 0, with_bounds: bool = False) -> str:
     lines: list[str] = []
     pad = "  " * indent
     for n in nodes:
         attr_str = "".join(f' {k}="{_esc(v)}"' for k, v in n.attrs.items())
-        open_tag = f'{pad}<{n.tag} ref="{n.ref}"{attr_str}'
+        at = f' at="{n.center[0]},{n.center[1]}"' if with_bounds and n.center else ""
+        open_tag = f'{pad}<{n.tag} ref="{n.ref}"{attr_str}{at}'
         if n.children:
             lines.append(open_tag + ">")
-            lines.append(_serialize(n.children, indent + 1))
+            lines.append(_serialize(n.children, indent + 1, with_bounds))
             lines.append(f"{pad}</{n.tag}>")
         else:
             lines.append(open_tag + "/>")

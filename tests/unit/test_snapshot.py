@@ -175,3 +175,28 @@ def test_non_colliding_locators_are_left_untouched():
     xml, refmap = build_snapshot((FIX / "android_source.xml").read_text(), get_strategy("android"))
     non_xpath = [loc for loc in refmap.values() if loc.by != "xpath"]
     assert non_xpath, "dedupe should not have downgraded every locator to xpath"
+
+
+# --- snapshot --bounds (§2.5) ----------------------------------------------
+
+def test_android_bounds_emits_center_only_when_requested():
+    src = ('<hierarchy><android.widget.Button resource-id="com.x:id/b" '
+           'text="OK" bounds="[10,20][110,60]"/></hierarchy>')
+    plain, _ = build_snapshot(src, get_strategy("android"))
+    assert " at=" not in plain
+    withb, _ = build_snapshot(src, get_strategy("android"), with_bounds=True)
+    assert 'at="60,40"' in withb
+
+
+def test_ios_bounds_center_from_xywh():
+    src = ('<XCUIElementTypeApplication name="A" visible="true">'
+           '<XCUIElementTypeButton name="OK" x="10" y="20" width="100" height="40" visible="true"/>'
+           "</XCUIElementTypeApplication>")
+    withb, _ = build_snapshot(src, get_strategy("ios"), with_bounds=True)
+    assert 'at="60,40"' in withb
+
+
+def test_center_none_when_geometry_absent():
+    assert get_strategy("android").center({}) is None
+    assert get_strategy("android").center({"bounds": "garbage"}) is None
+    assert get_strategy("ios").center({"x": "1"}) is None  # incomplete

@@ -73,6 +73,14 @@ class IOSStrategy(PlatformStrategy):
             return Locator(AppiumBy.IOS_PREDICATE, f"label == {_pq(label)}", text)
         return Locator(AppiumBy.XPATH, xpath, text)
 
+    def center(self, attrs: dict):
+        try:  # iOS carries geometry as separate x/y/width/height attrs.
+            x, y = int(attrs["x"]), int(attrs["y"])
+            w, h = int(attrs["width"]), int(attrs["height"])
+        except (KeyError, ValueError, TypeError):
+            return None
+        return (x + w // 2, y + h // 2)
+
     def kept_attrs(self, attrs: dict) -> dict:
         out: dict = {}
         name = attrs.get("name")

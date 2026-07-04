@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import xml.etree.ElementTree as ET
 
 from appium.webdriver.common.appiumby import AppiumBy
@@ -11,6 +12,10 @@ from appium_pilot.strategies.base import Locator, PlatformStrategy, _truthy
 
 # Common Android keycodes for `press`.
 KEYCODES = {"back": 4, "home": 3, "enter": 66, "tab": 61, "delete": 67, "search": 84, "menu": 82}
+
+
+# Android page source encodes geometry as bounds="[x1,y1][x2,y2]".
+_BOUNDS_RE = re.compile(r"\[(-?\d+),(-?\d+)\]\[(-?\d+),(-?\d+)\]")
 
 
 def _q(value: str) -> str:
@@ -97,6 +102,13 @@ class AndroidStrategy(PlatformStrategy):
         if text and not is_input:
             return Locator(AppiumBy.XPATH, f"//*[@text={_q(text)}]", display)
         return Locator(AppiumBy.XPATH, xpath, display)
+
+    def center(self, attrs: dict):
+        m = _BOUNDS_RE.fullmatch(attrs.get("bounds", "") or "")
+        if not m:
+            return None
+        x1, y1, x2, y2 = (int(g) for g in m.groups())
+        return ((x1 + x2) // 2, (y1 + y2) // 2)
 
     def kept_attrs(self, attrs: dict) -> dict:
         out: dict = {}
