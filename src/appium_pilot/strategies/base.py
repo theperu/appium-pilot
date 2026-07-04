@@ -121,6 +121,18 @@ class PlatformStrategy(ABC):
         driver.swipe(x1, y1, x2, y2, 400)
 
     @abstractmethod
+    def gesture_tap(self, driver, kind: str, element=None,  # noqa: ANN001
+                    x: Optional[int] = None, y: Optional[int] = None,
+                    duration: float = 1.0) -> None:
+        """Tap a target with a non-default gesture.
+
+        `kind` is "single" (coordinate tap), "long" (press-and-hold for
+        `duration` seconds), or "double". The target is either `element` or the
+        point (`x`, `y`) — exactly one. A plain single tap on an element uses
+        the W3C `element.click()` directly and never reaches here.
+        """
+
+    @abstractmethod
     def scroll_to_element(self, driver, element) -> None:  # noqa: ANN001
         """Scroll until `element` is on screen."""
 

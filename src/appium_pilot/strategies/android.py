@@ -148,6 +148,15 @@ class AndroidStrategy(PlatformStrategy):
 
     # ---- gestures ---------------------------------------------------------
 
+    def gesture_tap(self, driver, kind, element=None, x=None, y=None, duration=1.0) -> None:  # noqa: ANN001
+        target = {"elementId": element.id} if element is not None else {"x": x, "y": y}
+        if kind == "long":
+            driver.execute_script("mobile: longClickGesture", {**target, "duration": int(duration * 1000)})
+        elif kind == "double":
+            driver.execute_script("mobile: doubleClickGesture", target)
+        else:  # single tap at a coordinate
+            driver.execute_script("mobile: clickGesture", target)
+
     def _native_swipe(self, driver, direction: str, amount: float) -> None:  # noqa: ANN001
         size = driver.get_window_size()
         driver.execute_script(

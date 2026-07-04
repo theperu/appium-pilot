@@ -127,6 +127,16 @@ class IOSStrategy(PlatformStrategy):
 
     # ---- gestures ---------------------------------------------------------
 
+    def gesture_tap(self, driver, kind, element=None, x=None, y=None, duration=1.0) -> None:  # noqa: ANN001
+        target = {"elementId": element.id} if element is not None else {"x": x, "y": y}
+        if kind == "long":
+            # XCUITest durations are seconds (Android's are ms).
+            driver.execute_script("mobile: touchAndHold", {**target, "duration": duration})
+        elif kind == "double":
+            driver.execute_script("mobile: doubleTap", target)
+        else:  # single tap at a coordinate
+            driver.execute_script("mobile: tap", target)
+
     def _native_swipe(self, driver, direction: str, amount: float) -> None:  # noqa: ANN001
         driver.execute_script("mobile: swipe", {"direction": direction})
 

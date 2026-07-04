@@ -70,7 +70,11 @@ lives in `~/.appium-pilot/`.
 ## Acting (all use refs from the latest snapshot)
 
 ```bash
-appium-pilot tap e7
+appium-pilot tap e7                             # tap by ref (preferred)
+appium-pilot tap --text "Login"                 # tap by visible text (element the filter missed)
+appium-pilot tap --at 200,640                   # tap raw coordinates (last resort)
+appium-pilot tap e7 --long                      # long-press (--duration secs, default 1.0)
+appium-pilot tap e7 --double                    # double-tap
 appium-pilot type e3 "user@example.com"        # types into the field
 appium-pilot type e3 "pw" --clear --submit     # clear first, press enter/return after
 appium-pilot clear e3

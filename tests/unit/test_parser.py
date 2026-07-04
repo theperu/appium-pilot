@@ -30,6 +30,8 @@ def test_all_subcommands_registered():
     ["video-start"], ["skills", "install"], ["orientation"], ["wait", "e1"],
     ["alert"], ["alert", "accept"], ["alert", "dismiss"],
     ["get", "e1"], ["get", "e1", "bounds"],
+    ["tap", "--text", "Login"], ["tap", "--at", "10,20"], ["tap", "e1", "--long"],
+    ["tap", "e1", "--double"],
 ])
 def test_known_commands_parse(argv):
     args = build_parser().parse_args(argv)
