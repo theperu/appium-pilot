@@ -13,6 +13,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
+from appium.webdriver.common.appiumby import AppiumBy
+
 DIRECTIONS = ("up", "down", "left", "right")
 
 
@@ -64,6 +66,15 @@ class PlatformStrategy(ABC):
     @abstractmethod
     def best_locator(self, attrs: dict, xpath: str) -> Locator:
         """Most robust locator for the node, per platform preference order."""
+
+    @staticmethod
+    def xpath_locator(xpath: str, text: str = "") -> Locator:
+        """Positional fallback locator (used to break locator collisions).
+
+        The indexed xpath is unique per element, so it's the reliable escape
+        hatch when best_locator picks the same locator for two refs.
+        """
+        return Locator(AppiumBy.XPATH, xpath, text)
 
     @abstractmethod
     def kept_attrs(self, attrs: dict) -> dict:

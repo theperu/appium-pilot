@@ -1,5 +1,6 @@
 """build_snapshot: layout pruning, kept-node nesting, sequential refs."""
 
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from appium_pilot.snapshot import build_snapshot
@@ -123,3 +124,54 @@ def test_ios_button_drops_duplicate_label_child_keeps_own_locator():
     assert xml.count("Submit") == 1
     assert "submit" in refmap["e2"].value
     assert _refs_are_sequential(refmap)
+
+
+# --- locator dedupe (§3.1) -------------------------------------------------
+
+def _resolves_uniquely(source: str, xpath: str) -> bool:
+    """Does `xpath` match exactly one element in `source`?
+
+    The dedupe fallback is only correct if each rewritten locator uniquely
+    identifies its element live; asserting the strings merely *differ* would
+    pass even for a malformed or non-unique xpath. ElementTree resolves the
+    absolute indexed path (a subset of XPath 1.0 the device driver also
+    supports) so we can prove uniqueness device-free.
+    """
+    root = ET.fromstring(source)
+    assert xpath.startswith("/" + root.tag), xpath  # absolute path from the root
+    relative = "." + xpath[len("/" + root.tag):]
+    return len(root.findall(relative)) == 1
+
+
+def test_duplicate_rows_get_distinct_xpath_locators():
+    # Two rows with identical id+text produce the same best_locator; the dedupe
+    # pass must fall back to each node's unique indexed xpath so acting on a ref
+    # never fails "ambiguous" at action time.
+    src = (
+        "<hierarchy>"
+        '<android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">'
+        '<android.widget.TextView resource-id="android:id/title" text="Item"/>'
+        "</android.widget.LinearLayout>"
+        '<android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">'
+        '<android.widget.TextView resource-id="android:id/title" text="Item"/>'
+        "</android.widget.LinearLayout>"
+        "</hierarchy>"
+    )
+    xml, refmap = build_snapshot(src, get_strategy("android"))
+    assert len(refmap) == 2
+    pairs = [(loc.by, loc.value) for loc in refmap.values()]
+    assert len(set(pairs)) == 2, f"locators still collide: {pairs}"
+    assert all(loc.by == "xpath" for loc in refmap.values())
+    # Each fallback xpath must resolve to exactly one live element — the actual
+    # correctness claim, not just that the two strings differ.
+    assert all(_resolves_uniquely(src, loc.value) for loc in refmap.values())
+    # Display text survives for error messages.
+    assert all(loc.text == "Item" for loc in refmap.values())
+    assert _refs_are_sequential(refmap)
+
+
+def test_non_colliding_locators_are_left_untouched():
+    # Distinct labels must keep their strong (non-xpath) locators.
+    xml, refmap = build_snapshot((FIX / "android_source.xml").read_text(), get_strategy("android"))
+    non_xpath = [loc for loc in refmap.values() if loc.by != "xpath"]
+    assert non_xpath, "dedupe should not have downgraded every locator to xpath"

@@ -20,6 +20,7 @@ class PNode:
     ref: str
     tag: str
     attrs: dict
+    xpath: str = ""  # unique indexed path; the collision-breaking fallback locator
     children: list["PNode"] = field(default_factory=list)
 
 
@@ -42,7 +43,7 @@ def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, d
             refmap[ref] = strategy.best_locator(attrs, xpath)
             # Locator uses the full class (above); the emitted tag is shortened.
             tag = strategy.short_tag(strategy.effective_tag(el))
-            node = PNode(ref=ref, tag=tag, attrs=strategy.kept_attrs(attrs))
+            node = PNode(ref=ref, tag=tag, attrs=strategy.kept_attrs(attrs), xpath=xpath)
 
         child_nodes: list[PNode] = []
         sibling_counts: dict[str, int] = {}
@@ -61,6 +62,7 @@ def build_snapshot(page_source: str, strategy: PlatformStrategy) -> tuple[str, d
     top = walk(root, root_path)
     _fold(top, strategy, refmap)
     refmap = _renumber(top, refmap)
+    _dedupe(top, strategy, refmap)
     xml = _serialize(top)
     return xml, refmap
 
@@ -94,6 +96,35 @@ def _renumber(nodes: list[PNode], refmap: dict[str, Locator]) -> dict[str, Locat
 
     visit(nodes)
     return out
+
+
+def _dedupe(nodes: list[PNode], strategy: PlatformStrategy, refmap: dict[str, Locator]) -> None:
+    """Break (by, value) collisions by falling back to each node's indexed xpath.
+
+    best_locator can hand two refs the same locator (a list repeats a label or
+    resource-id); that only surfaces as an "ambiguous, run snapshot again"
+    failure at *action* time. Since the whole refmap is built here in one pass,
+    detect the collision now and give each colliding ref its unique xpath — the
+    display text is preserved for error messages. The emitted XML is unchanged.
+    """
+    flat: list[PNode] = []
+
+    def collect(ns: list[PNode]) -> None:
+        for n in ns:
+            flat.append(n)
+            collect(n.children)
+
+    collect(nodes)
+
+    groups: dict[tuple[str, str], list[PNode]] = {}
+    for n in flat:
+        loc = refmap[n.ref]
+        groups.setdefault((loc.by, loc.value), []).append(n)
+
+    for members in groups.values():
+        if len(members) > 1:
+            for n in members:
+                refmap[n.ref] = strategy.xpath_locator(n.xpath, refmap[n.ref].text)
 
 
 def _serialize(nodes: list[PNode], indent: int = 0) -> str:
