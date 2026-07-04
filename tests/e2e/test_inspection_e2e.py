@@ -42,3 +42,18 @@ def test_devices(fresh):
 def test_list_shows_session(fresh, platform):
     _, data = fresh.run("list", json_out=True)
     assert any(s.get("name") == f"test-{platform}" for s in data["sessions"])
+
+
+# --- get: live element state without a re-snapshot (§2.3) ------------------
+
+def test_get_reflects_typed_text(fresh, app):
+    ref = app.reach_editable(fresh)
+    fresh.run("type", ref, app.type_value, "--clear")
+    rc, out, _ = fresh.run("get", ref)
+    assert rc == 0 and app.type_value in out
+
+
+def test_get_single_attribute(fresh, app):
+    ref = app.ready_ref(fresh)
+    rc, out, _ = fresh.run("get", ref, "enabled")
+    assert rc == 0 and "true" in out.lower()

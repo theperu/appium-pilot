@@ -101,6 +101,19 @@ class AndroidApp:
     def cause_disappear(self, cli) -> None:
         cli.run("tap", cli.ref_for(r'(text|desc)="Views"'))
 
+    def show_alert(self, cli):
+        """Raise a system dialog; return an expected substring of its text (or
+        None if the trigger isn't found). App > Alert Dialogs > OK-Cancel."""
+        if cli.run("tap", "--text", "App", check=False)[0] != 0:
+            return None
+        cli.run("wait", "--text", "Alert Dialogs", "--timeout", "8", check=False)
+        cli.run("tap", "--text", "Alert Dialogs", check=False)
+        cli.run("wait", "--text", "OK Cancel dialog with a message", "--timeout", "8", check=False)
+        if cli.run("tap", "--text", "OK Cancel dialog with a message", check=False)[0] != 0:
+            return None
+        cli.run("wait", "--text", "Lorem", "--timeout", "8", check=False)
+        return "Lorem ipsum"
+
 
 class IOSApp:
     platform = "ios"
@@ -134,6 +147,13 @@ class IOSApp:
 
     def cause_disappear(self, cli) -> None:
         pass
+
+    def show_alert(self, cli):
+        """TestApp's "show alert" button raises an alert titled "Cool title"."""
+        if cli.run("tap", "--text", "show alert", check=False)[0] != 0:
+            return None
+        cli.run("wait", "--text", "cool", "--timeout", "8", check=False)
+        return "cool"
 
 
 def get_app(platform: str):

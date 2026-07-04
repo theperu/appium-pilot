@@ -38,3 +38,29 @@ def test_stale_ref_exits_2(fresh, app):
     assert ref
     fresh.run("tap", ref)               # navigates away; ref's element no longer present
     assert fresh.run("tap", ref, check=False)[0] == 2
+
+
+# --- richer tap: text / coordinate / long / double (§2.2) ------------------
+
+def test_tap_by_text(fresh, app):
+    assert fresh.run("tap", "--text", app.ready_text, check=False)[0] == 0
+
+
+def test_tap_long(fresh, app):
+    ref = app.ready_ref(fresh)
+    assert fresh.run("tap", ref, "--long", "--duration", "0.4", check=False)[0] == 0
+
+
+def test_tap_double(fresh, app):
+    ref = app.ready_ref(fresh)
+    assert fresh.run("tap", ref, "--double", check=False)[0] == 0
+
+
+def test_tap_at_coordinate(fresh):
+    # A corner tap is harmless; this exercises the coordinate gesture path.
+    assert fresh.run("tap", "--at", "1,1", check=False)[0] == 0
+
+
+def test_tap_requires_exactly_one_target(fresh):
+    assert fresh.run("tap", check=False)[0] != 0            # none
+    assert fresh.run("tap", "e1", "--at", "1,1", check=False)[0] != 0  # two
