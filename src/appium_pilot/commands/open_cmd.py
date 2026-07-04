@@ -27,7 +27,18 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
     p.add_argument("--cap", action="append", default=[], metavar="k=v",
                    help="extra capability (repeatable); appium: prefix added if missing")
     p.add_argument("--caps-file", help="JSON file of capabilities to merge")
+    p.add_argument("--auto-accept-alerts", action="store_true",
+                   help="auto-accept permission/system dialogs "
+                        "(autoGrantPermissions on Android, autoAcceptAlerts on iOS)")
     p.set_defaults(func=run)
+
+
+# Per-platform capability that makes the driver clear permission/system dialogs
+# on its own. Android grants runtime permissions; iOS taps the accept button.
+AUTO_ACCEPT_ALERT_CAP = {
+    "android": {"appium:autoGrantPermissions": True},
+    "ios": {"appium:autoAcceptAlerts": True},
+}
 
 
 def _infer_platform(args, app: Optional[str]) -> str:
@@ -88,9 +99,12 @@ def run(args) -> None:
     if args.bundle_id:
         caps["appium:bundleId"] = args.bundle_id
 
+    if args.auto_accept_alerts:
+        caps.update(AUTO_ACCEPT_ALERT_CAP[platform])
+
     if args.caps_file:
         caps.update(json.loads(Path(args.caps_file).read_text()))
-    caps.update(_parse_caps(args.cap))  # explicit --cap wins
+    caps.update(_parse_caps(args.cap))  # explicit --cap / caps-file win
 
     base_url = server.ensure_server()
     driver = new_driver(base_url, caps)

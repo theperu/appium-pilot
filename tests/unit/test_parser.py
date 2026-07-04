@@ -8,7 +8,7 @@ from appium_pilot.cli import _normalize_session_flag, build_parser
 
 EXPECTED = {
     "open", "close", "snapshot", "source", "screenshot", "tap", "type", "clear",
-    "swipe", "scroll", "press", "hide-keyboard", "wait", "video-start", "video-stop",
+    "swipe", "scroll", "press", "hide-keyboard", "wait", "alert", "video-start", "video-stop",
     "launch", "activate", "terminate", "background", "install", "remove", "reset",
     "orientation", "devices", "list", "close-all", "kill-all", "skills", "doctor",
 }
@@ -28,6 +28,7 @@ def test_all_subcommands_registered():
 @pytest.mark.parametrize("argv", [
     ["snapshot"], ["tap", "e1"], ["type", "e1", "hi"], ["swipe", "up"],
     ["video-start"], ["skills", "install"], ["orientation"], ["wait", "e1"],
+    ["alert"], ["alert", "accept"], ["alert", "dismiss"],
 ])
 def test_known_commands_parse(argv):
     args = build_parser().parse_args(argv)

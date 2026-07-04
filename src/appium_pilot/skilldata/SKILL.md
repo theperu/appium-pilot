@@ -81,6 +81,20 @@ appium-pilot press home                          # ios: home | enter only (no sy
 appium-pilot orientation landscape               # or: portrait; omit to read current
 ```
 
+### System alerts / permission dialogs
+
+Popups like "Allow notifications?" aren't in the app's view hierarchy, so refs
+don't reach them — use `alert`:
+
+```bash
+appium-pilot alert            # print the alert's text (exit 2 if none shown)
+appium-pilot alert accept     # tap its accept/OK button
+appium-pilot alert dismiss    # tap its cancel/deny button
+```
+
+To skip permission prompts entirely, launch with `open --auto-accept-alerts`
+(sets `autoGrantPermissions` on Android / `autoAcceptAlerts` on iOS).
+
 ## Waiting (for async UI)
 
 ```bash

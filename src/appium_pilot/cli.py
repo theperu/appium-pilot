@@ -14,6 +14,7 @@ from selenium.common.exceptions import WebDriverException
 
 from appium_pilot import __version__
 from appium_pilot.commands import (
+    alert_cmd,
     app_cmd,
     capture_cmd,
     devices_cmd,
@@ -49,6 +50,7 @@ def build_parser() -> argparse.ArgumentParser:
         type_cmd,
         gesture_cmd,
         wait_cmd,
+        alert_cmd,
         video_cmd,
         app_cmd,
         devices_cmd,

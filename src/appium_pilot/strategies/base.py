@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from appium.webdriver.common.appiumby import AppiumBy
+from selenium.common.exceptions import NoAlertPresentException
 
 DIRECTIONS = ("up", "down", "left", "right")
 
@@ -141,6 +142,23 @@ class PlatformStrategy(ABC):
 
     def hide_keyboard(self, driver) -> None:  # noqa: ANN001
         driver.hide_keyboard()
+
+    # ---- system alerts / permission dialogs -------------------------------
+    # Both drivers implement the W3C alert commands: UiAutomator2 maps them to
+    # the dialog's positive/negative buttons, XCUITest to the springboard alert.
+
+    def alert_text(self, driver) -> Optional[str]:  # noqa: ANN001
+        """The visible alert's text, or None when no alert is shown."""
+        try:
+            return driver.switch_to.alert.text
+        except NoAlertPresentException:
+            return None
+
+    def accept_alert(self, driver) -> None:  # noqa: ANN001
+        driver.switch_to.alert.accept()
+
+    def dismiss_alert(self, driver) -> None:  # noqa: ANN001
+        driver.switch_to.alert.dismiss()
 
     def recording_options(self, time_limit: int, quality: str) -> dict:
         """Options for start_recording_screen. timeLimit is common to both drivers."""
