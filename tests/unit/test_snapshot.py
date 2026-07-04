@@ -200,3 +200,32 @@ def test_center_none_when_geometry_absent():
     assert get_strategy("android").center({}) is None
     assert get_strategy("android").center({"bounds": "garbage"}) is None
     assert get_strategy("ios").center({"x": "1"}) is None  # incomplete
+
+
+# --- more fixtures (§4.2): legacy <node class=...>, duplicate rows -----------
+
+def test_android_legacy_node_class_source():
+    # Old-style UiAutomator dumps wrap every element in <node class="...">;
+    # effective_tag must fall back to @class through the whole pipeline.
+    xml, refmap = build_snapshot((FIX / "android_legacy_nodes.xml").read_text(),
+                                 get_strategy("android"))
+    # Tags come from @class and are shortened; the literal "node" never leaks.
+    assert "<node" not in xml and "android.widget" not in xml
+    assert "<Button" in xml and "<TextView" in xml and "<EditText" in xml
+    # Pure layout containers (only a resource-id) are still dropped.
+    assert 'id="content"' not in xml and 'id="wrap"' not in xml
+    # Content is extracted; the EditText binds to its id, not mutable text.
+    assert 'text="OK"' in xml and "Legacy" in xml
+    edit = next(loc for loc in refmap.values() if loc.value == "com.x:id/field")
+    assert edit.by == "id"
+    assert _refs_are_sequential(refmap)
+
+
+def test_android_duplicates_fixture_dedupes_to_unique_xpaths():
+    src = (FIX / "android_duplicates.xml").read_text()
+    _, refmap = build_snapshot(src, get_strategy("android"))
+    rows = [loc for loc in refmap.values() if loc.text == "Duplicate"]
+    assert len(rows) == 3
+    values = [loc.value for loc in rows]
+    assert len(set(values)) == 3, f"rows still collide: {values}"
+    assert all(loc.by == "xpath" and _resolves_uniquely(src, loc.value) for loc in rows)

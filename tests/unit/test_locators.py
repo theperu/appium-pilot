@@ -73,3 +73,35 @@ def test_ios_display_text_precedence():
     assert IOS.display_text({"label": "L", "value": "V", "name": "N"}) == "L"
     assert IOS.display_text({"label": "", "value": "V", "name": "N"}) == "V"
     assert IOS.display_text({"name": "N"}) == "N"
+
+
+# --- literal quoting + unicode in locators (§4.2) ---------------------------
+
+from appium_pilot.strategies.android import _q  # noqa: E402
+from appium_pilot.strategies.ios import _pq  # noqa: E402
+
+
+def test_android_xpath_quoting():
+    assert _q("hello") == "'hello'"                 # no quotes → single-quote wrap
+    assert _q("it's") == '"it\'s"'                  # has ' → double-quote wrap
+    assert _q('say "hi"') == "'say \"hi\"'"        # has " → single-quote wrap
+    both = _q("mix'and\"quote")                     # has both → concat()
+    assert both.startswith("concat(") and "\"'\"" in both
+    assert _q("Add 🎉") == "'Add 🎉'"               # emoji pass through verbatim
+
+
+def test_ios_predicate_quoting():
+    assert _pq("hello") == "'hello'"
+    assert _pq("it's") == "'it\\'s'"                # single quote escaped
+    assert _pq("a\\b") == "'a\\\\b'"                # backslash escaped first
+    assert _pq("Cool 🎉") == "'Cool 🎉'"            # emoji pass through verbatim
+
+
+def test_quoted_text_builds_wellformed_locator():
+    # An apostrophe in text must not break the generated xpath predicate.
+    src = ('<hierarchy><android.widget.TextView resource-id="com.x:id/t" '
+           "text=\"it's here\"/></hierarchy>")
+    from appium_pilot.snapshot import build_snapshot
+    _, refmap = build_snapshot(src, get_strategy("android"))
+    (loc,) = refmap.values()
+    assert "it's here" in loc.value and loc.value.startswith("//*[@resource-id=")

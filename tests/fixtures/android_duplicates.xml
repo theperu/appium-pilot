@@ -1,0 +1,13 @@
+<hierarchy rotation="0">
+  <androidx.recyclerview.widget.RecyclerView resource-id="com.x:id/list" scrollable="true">
+    <android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">
+      <android.widget.TextView resource-id="android:id/text1" text="Duplicate"/>
+    </android.widget.LinearLayout>
+    <android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">
+      <android.widget.TextView resource-id="android:id/text1" text="Duplicate"/>
+    </android.widget.LinearLayout>
+    <android.widget.LinearLayout resource-id="com.x:id/row" clickable="true">
+      <android.widget.TextView resource-id="android:id/text1" text="Duplicate"/>
+    </android.widget.LinearLayout>
+  </androidx.recyclerview.widget.RecyclerView>
+</hierarchy>
