@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "appium-pilot"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Agent-first, session-based CLI for driving mobile apps via Appium"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -50,6 +50,9 @@ markers = [
     "ios: iOS-specific test",
     "android: Android-specific test",
 ]
+
+[tool.hatch.version]
+path = "src/appium_pilot/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/appium_pilot"]
