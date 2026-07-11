@@ -20,5 +20,8 @@ tests/_apps/
 .claude/
 CLAUDE.md
 
+# Serena MCP local cache
+.serena/
+
 # internal notes (not tracked)
 /notes/
