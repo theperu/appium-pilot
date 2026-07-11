@@ -112,6 +112,12 @@ class IOSStrategy(PlatformStrategy):
         out["enabled"] = element.is_enabled()
         return out
 
+    def is_checked(self, element):  # noqa: ANN001
+        # Only Switches carry an on/off state, exposed as value "1"/"0".
+        if element.get_attribute("type") != "XCUIElementTypeSwitch":
+            return None
+        return element.get_attribute("value") in ("1", "true")
+
     def try_fold(self, parent, child):  # noqa: ANN001
         # Cells/Buttons/Links wrapping a single StaticText-style label are one
         # tappable thing (a Button's label is routinely duplicated as a child).

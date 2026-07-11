@@ -197,6 +197,15 @@ class PlatformStrategy(ABC):
         out["enabled"] = element.is_enabled()
         return out
 
+    def is_checked(self, element) -> Optional[bool]:  # noqa: ANN001
+        """Tri-state toggle state for `expect --checked/--unchecked`.
+
+        True/False for a checkable control (checkbox/switch/toggle), None when
+        the element isn't checkable at all. Default None so a new platform, or a
+        plain element, degrades to "not a checkable element" rather than lying.
+        Overridden per platform (the state attribute differs)."""
+        return None
+
     def recording_options(self, time_limit: int, quality: str) -> dict:
         """Options for start_recording_screen. timeLimit is common to both drivers."""
         return {"timeLimit": str(time_limit)}

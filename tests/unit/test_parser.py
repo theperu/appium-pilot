@@ -7,7 +7,7 @@ import pytest
 from appium_pilot.cli import _normalize_session_flag, build_parser
 
 EXPECTED = {
-    "open", "close", "snapshot", "source", "screenshot", "tap", "type", "clear", "get",
+    "open", "close", "snapshot", "source", "screenshot", "tap", "type", "clear", "get", "expect",
     "swipe", "scroll", "press", "hide-keyboard", "wait", "alert", "url", "video-start", "video-stop",
     "launch", "activate", "terminate", "background", "install", "remove", "reset",
     "orientation", "devices", "list", "close-all", "kill-all", "skills", "doctor",
@@ -30,6 +30,9 @@ def test_all_subcommands_registered():
     ["video-start"], ["skills", "install"], ["orientation"], ["wait", "e1"],
     ["alert"], ["alert", "accept"], ["alert", "dismiss"],
     ["get", "e1"], ["get", "e1", "bounds"],
+    ["expect", "e1", "--text", "Hi"], ["expect", "e1", "--contains", "H"],
+    ["expect", "e1", "--visible"], ["expect", "e1", "--gone"],
+    ["expect", "e1", "--checked", "--timeout", "2"],
     ["tap", "--text", "Login"], ["tap", "--at", "10,20"], ["tap", "e1", "--long"],
     ["tap", "e1", "--double"], ["url", "myapp://x/1"],
 ])
@@ -47,3 +50,18 @@ def test_session_flag_normalization():
 def test_unknown_command_exits():
     with pytest.raises(SystemExit):
         build_parser().parse_args(["not-a-command"])
+
+
+def test_expect_rejects_two_matchers_at_parse_time():
+    # The matcher group is mutually exclusive; picking two is a parse error.
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["expect", "e1", "--text", "a", "--visible"])
+
+
+@pytest.mark.parametrize("argv", [
+    ["expect", "e1"],                # missing matcher — deferred to run() (ref vs --all)
+    ["expect", "--all", "c.txt"],    # batch mode: no ref/matcher needed
+])
+def test_expect_defers_ref_matcher_validation(argv):
+    # These parse cleanly; run() decides whether ref+matcher or --all is satisfied.
+    assert hasattr(build_parser().parse_args(argv), "func")

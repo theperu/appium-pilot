@@ -138,6 +138,12 @@ class AndroidStrategy(PlatformStrategy):
             out["checked"] = element.get_attribute("checked") == "true"
         return out
 
+    def is_checked(self, element):  # noqa: ANN001
+        # Non-checkable widgets have no meaningful checked state → None.
+        if element.get_attribute("checkable") != "true":
+            return None
+        return element.get_attribute("checked") == "true"
+
     def try_fold(self, parent, child):  # noqa: ANN001
         # Only fold a lone text/desc leaf into a clickable container; never fold
         # anything interactive in its own right (inputs, buttons, ...).

@@ -117,6 +117,45 @@ appium-pilot wait --gone e7          # until it disappears
 appium-pilot wait e7 --timeout 20
 ```
 
+## Asserting (the test oracle)
+
+`expect` verifies state and sets the exit code: **0** the assertion held, **1** it
+failed (the app is wrong — `--json` carries `expected`/`actual`), **2** it couldn't
+be judged (ambiguous ref, non-checkable element). It polls until true or `--timeout`
+(default 5s), so you don't need a separate `wait` first.
+
+```bash
+appium-pilot expect e3 --text "Welcome"    # display label equals, exactly
+appium-pilot expect e3 --contains "Wel"    # substring, searches labels + typed value
+appium-pilot expect e3 --matches "^\\d+$"  # regex over any visible text
+appium-pilot expect e3 --value "246"       # input contents equal, exactly
+appium-pilot expect e7 --visible           # present and on screen
+appium-pilot expect e7 --gone              # absent or hidden
+appium-pilot expect e3 --enabled | --disabled
+appium-pilot expect e5 --checked | --unchecked   # toggles/switches only
+appium-pilot expect e7 --gone --timeout 8
+```
+
+One matcher per call. Refs come from the latest snapshot, same as acting.
+
+Batch (soft assertions) — one `<ref> <matcher>` per line, same grammar; judged
+all together, not stopped at the first miss. `#` lines and blanks are ignored;
+the whole set shares one `--timeout`.
+
+```bash
+appium-pilot expect --all smoke.checks     # from a file
+snapshot | gen-checks | expect --all -      # or stdin
+```
+```text
+# smoke.checks
+e3 --text "Welcome"
+e7 --visible
+e5 --gone
+```
+
+Reports `PASS`/`FAIL`/`ERROR` per line + a summary; exit 0 all passed, 1 any
+failed, 2 nothing failed but a check couldn't be evaluated.
+
 ## App lifecycle
 
 ```bash
