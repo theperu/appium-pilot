@@ -42,3 +42,9 @@ def screenshots_dir() -> Path:
 
 def videos_dir() -> Path:
     return output_dir() / "videos"
+
+
+def diffs_dir() -> Path:
+    # Visual-diff images from `expect --baseline` land here (baselines themselves
+    # live wherever the user points --baseline, as committed goldens).
+    return output_dir() / "diffs"

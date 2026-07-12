@@ -37,7 +37,10 @@ Repository = "https://github.com/theperu/appium-pilot"
 Issues = "https://github.com/theperu/appium-pilot/issues"
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff"]
+# Visual baseline diffing (expect --baseline). Optional so the core install
+# stays at just Appium + selenium; the command errors with an install hint if absent.
+visual = ["Pillow>=10.0.0"]
+dev = ["pytest>=8", "ruff", "Pillow>=10.0.0"]
 
 [project.scripts]
 appium-pilot = "appium_pilot.cli:main"

@@ -29,6 +29,7 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from appium_pilot import config
 from appium_pilot.output import CommandError, emit
 from appium_pilot.session import Session
 
@@ -67,11 +68,22 @@ def _add_matcher_group(parser: argparse.ArgumentParser, required: bool):
 def add_parser(sub: argparse._SubParsersAction) -> None:
     p = sub.add_parser("expect", help="assert a ref's state, or a batch of checks (exit 0 pass / 1 fail)")
     p.add_argument("ref", nargs="?", help="element ref from the latest snapshot")
-    _add_matcher_group(p, required=False)  # required-ness is validated in run() (ref vs --all)
+    g = _add_matcher_group(p, required=False)  # required-ness is validated in run() (ref vs --all)
+    # --baseline joins the matcher group here (not in _add_matcher_group), so it is
+    # available to a single `expect` but NOT to batch lines, which reuse the helper.
+    g.add_argument("--baseline", metavar="IMG",
+                   help="screenshot the ref (or full screen) and compare against baseline IMG")
     p.add_argument("--all", metavar="FILE", dest="all_file",
                    help="run a file of checks — one `<ref> <matcher>` per line ('-' for stdin)")
     p.add_argument("--timeout", type=float, default=5.0,
                    help="seconds to poll until the assertion(s) hold (default 5)")
+    # Visual-diff modifiers — only meaningful with --baseline.
+    p.add_argument("--update", action="store_true",
+                   help="with --baseline: capture and (over)write the baseline instead of comparing")
+    p.add_argument("--threshold", type=float, default=0.001,
+                   help="with --baseline: max fraction of pixels allowed to differ (default 0.001)")
+    p.add_argument("--pixel-threshold", dest="pixel_threshold", type=int, default=16,
+                   help="with --baseline: per-channel color delta ignored as noise, 0-255 (default 16)")
     p.set_defaults(func=run)
 
 
@@ -82,11 +94,16 @@ def run(args) -> None:
             raise CommandError("--all cannot be combined with a ref or a matcher")
         _run_batch(session, args)
         return
+    matcher = _selected_matcher(args)
+    if matcher and matcher[0] == "baseline":
+        _run_visual(session, args, args.ref, matcher[1])  # ref optional: element vs full screen
+        return
+    if args.update:
+        raise CommandError("--update only applies with --baseline")
     if not args.ref:
         raise CommandError("expect needs a ref (or --all FILE)")
-    matcher = _selected_matcher(args)
     if matcher is None:
-        raise CommandError("expect needs a matcher (e.g. --visible, --text S, --gone)")
+        raise CommandError("expect needs a matcher (e.g. --visible, --text S, --gone, --baseline)")
     _run_single(session, args, args.ref, *matcher)
 
 
@@ -116,6 +133,98 @@ def _run_single(session: Session, args, ref: str, kind: str, expected: str | Non
         _fail_message(ref, kind, expected, result.actual, args.timeout),
         code=1, ref=ref, check=kind, expected=expected, actual=result.actual,
     )
+
+
+# --- visual baseline (--baseline) ------------------------------------------
+
+def _run_visual(session: Session, args, ref: str | None, baseline_path: str) -> None:
+    driver = session.attach()
+    element = None
+    if ref:
+        driver.implicitly_wait(0)
+        element = _resolve_single(driver, session.locator_for(ref), ref)
+
+    if args.update:
+        path = Path(baseline_path)
+        existed = path.exists()  # look before overwriting; report which happened
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(_capture_png(driver, element))
+        emit(f"baseline {'updated' if existed else 'created'}: {baseline_path}",
+             baseline=baseline_path, updated=existed, target=ref)
+        return
+
+    base_path = Path(baseline_path)
+    if not base_path.exists():
+        raise CommandError(f"no baseline at {baseline_path}; capture one with --update",
+                           code=2, baseline=baseline_path)
+
+    vd = _load_visualdiff()
+    baseline_img = vd.open_image(str(base_path))
+
+    deadline = time.monotonic() + args.timeout
+    result = None
+    while True:
+        current = vd.open_image(_capture_png(driver, element))
+        try:
+            result = vd.compare(baseline_img, current, args.pixel_threshold)
+        except vd.SizeMismatch as exc:  # never resize a golden — bail, don't poll
+            raise CommandError(str(exc), code=2, baseline=baseline_path,
+                               expected=list(exc.baseline), actual=list(exc.current)) from exc
+        if result.ratio <= args.threshold:
+            region = list(result.region) if result.region else None
+            emit(f"{_target(ref)} matches {baseline_path} ({_pct(result.ratio)} differ)",
+                 baseline=baseline_path, score=result.ratio, differing=result.differing,
+                 threshold=args.threshold, region=region)
+            return
+        if time.monotonic() >= deadline:
+            break
+        time.sleep(_POLL)
+
+    diffs = config.diffs_dir()
+    diffs.mkdir(parents=True, exist_ok=True)
+    diff_path = diffs / f"{base_path.stem}.diff.png"
+    vd.write_diff(baseline_img, result, diff_path)
+    region = list(result.region) if result.region else None
+    where = f" region {result.region}" if result.region else ""
+    raise CommandError(
+        f"{_target(ref)} differs from {baseline_path}: {_pct(result.ratio)} > "
+        f"{_pct(args.threshold)} threshold; diff -> {diff_path}{where}",
+        code=1, baseline=baseline_path, score=result.ratio, threshold=args.threshold,
+        differing=result.differing, region=region, diff=str(diff_path),
+    )
+
+
+def _capture_png(driver, element) -> bytes:  # noqa: ANN001
+    return element.screenshot_as_png if element is not None else driver.get_screenshot_as_png()
+
+
+def _resolve_single(driver, locator, ref: str):  # noqa: ANN001
+    """Exactly one element to screenshot, else exit 2 (can't produce a stable image)."""
+    matches = driver.find_elements(by=locator.by, value=locator.value)
+    if not matches:
+        raise CommandError(f"cannot screenshot {ref}: absent; run `snapshot` again", code=2)
+    if len(matches) > 1:
+        raise CommandError(f"cannot screenshot {ref}: {_ambiguous(matches)}", code=2)
+    return matches[0]
+
+
+def _load_visualdiff():
+    try:
+        from appium_pilot import visualdiff
+    except ImportError as exc:
+        raise CommandError(
+            "visual diff needs Pillow — install with: pip install 'appium-pilot[visual]'",
+            code=2,
+        ) from exc
+    return visualdiff
+
+
+def _target(ref: str | None) -> str:
+    return ref if ref else "screen"
+
+
+def _pct(ratio: float) -> str:
+    return f"{ratio * 100:.2f}%"
 
 
 # --- batch (--all) ---------------------------------------------------------
@@ -315,6 +424,9 @@ def evaluate(strategy, kind: str, expected: str | None, matches: list) -> Match:
 
 def _selected_matcher(args) -> tuple[str, str | None] | None:
     """The chosen matcher as (kind, expected-or-None), or None if none was given."""
+    baseline = getattr(args, "baseline", None)  # absent on batch-line namespaces
+    if baseline is not None:
+        return "baseline", baseline
     for kind in _STRING_MATCHERS:
         value = getattr(args, kind)
         if value is not None:

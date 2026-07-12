@@ -5,6 +5,8 @@ same flows exercise both platforms. Exit codes are the contract under test:
 0 held, 1 failed, 2 could-not-evaluate — so several cases assert on rc, not text.
 """
 
+from pathlib import Path
+
 import pytest
 
 pytestmark = pytest.mark.e2e
@@ -77,3 +79,31 @@ def test_expect_all_collects_failures_and_errors(fresh, app, tmp_path):
     assert rc == 1  # a real failure outranks the unevaluable one
     assert (data["passed"], data["failed"], data["errored"], data["total"]) == (1, 1, 1, 3)
     assert {c["status"] for c in data["checks"]} == {"pass", "fail", "error"}
+
+
+# --- expect --baseline: visual regression (§1.3) ---------------------------
+
+def test_expect_baseline_update_then_match(fresh, app, tmp_path):
+    ref = app.ready_ref(fresh)
+    base = tmp_path / "ready.png"
+    rc, out, _ = fresh.run("expect", ref, "--baseline", str(base), "--update", check=False)
+    assert rc == 0 and base.exists() and "created" in out
+    # Same static element, unchanged → within the default threshold.
+    assert fresh.run("expect", ref, "--baseline", str(base), check=False)[0] == 0
+
+
+def test_expect_baseline_detects_change(fresh, app, tmp_path):
+    ref = app.reach_editable(fresh)
+    base = tmp_path / "field.png"
+    fresh.run("expect", ref, "--baseline", str(base), "--update")
+    fresh.run("type", ref, app.type_value, "--clear")  # alters the field's pixels
+    rc, data = fresh.run("expect", ref, "--baseline", str(base), "--timeout", "1",
+                         json_out=True, check=False)
+    assert rc == 1 and data["score"] > data["threshold"]
+    assert Path(data["diff"]).exists()
+
+
+def test_expect_baseline_missing_exits_2(fresh, tmp_path):
+    rc, _out, err = fresh.run("expect", "--baseline", str(tmp_path / "nope.png"),
+                              "--timeout", "1", check=False)
+    assert rc == 2 and "update" in err

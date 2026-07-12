@@ -33,6 +33,8 @@ def test_all_subcommands_registered():
     ["expect", "e1", "--text", "Hi"], ["expect", "e1", "--contains", "H"],
     ["expect", "e1", "--visible"], ["expect", "e1", "--gone"],
     ["expect", "e1", "--checked", "--timeout", "2"],
+    ["expect", "e1", "--baseline", "b.png"], ["expect", "--baseline", "b.png", "--update"],
+    ["expect", "e1", "--baseline", "b.png", "--threshold", "0.01", "--pixel-threshold", "8"],
     ["tap", "--text", "Login"], ["tap", "--at", "10,20"], ["tap", "e1", "--long"],
     ["tap", "e1", "--double"], ["url", "myapp://x/1"],
 ])
@@ -52,10 +54,14 @@ def test_unknown_command_exits():
         build_parser().parse_args(["not-a-command"])
 
 
-def test_expect_rejects_two_matchers_at_parse_time():
+@pytest.mark.parametrize("argv", [
+    ["expect", "e1", "--text", "a", "--visible"],       # two element matchers
+    ["expect", "e1", "--baseline", "b.png", "--text", "a"],  # baseline is in the group too
+])
+def test_expect_rejects_two_matchers_at_parse_time(argv):
     # The matcher group is mutually exclusive; picking two is a parse error.
     with pytest.raises(SystemExit):
-        build_parser().parse_args(["expect", "e1", "--text", "a", "--visible"])
+        build_parser().parse_args(argv)
 
 
 @pytest.mark.parametrize("argv", [

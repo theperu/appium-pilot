@@ -6,6 +6,7 @@ The command layer only polls + formats; all the judging lives in
 rather than exit 1 (assertion failed).
 """
 
+import argparse
 import shlex
 
 import pytest
@@ -221,3 +222,22 @@ def test_read_lines_missing_file_is_code_2():
     with pytest.raises(CommandError) as exc:
         _read_lines("/no/such/checks/file.txt")
     assert exc.value.code == 2
+
+
+# --- --baseline is recognised as a matcher (visual diff dispatch) ----------
+
+def test_selected_matcher_detects_baseline():
+    ns = argparse.Namespace(
+        baseline="login.png", text=None, contains=None, matches=None, value=None,
+        visible=False, gone=False, enabled=False, disabled=False, checked=False, unchecked=False,
+    )
+    assert _selected_matcher(ns) == ("baseline", "login.png")
+
+
+def test_selected_matcher_baseline_absent_attr_is_safe():
+    # Batch-line namespaces have no `baseline` attr; detection must not raise.
+    ns = argparse.Namespace(
+        text="Hi", contains=None, matches=None, value=None,
+        visible=False, gone=False, enabled=False, disabled=False, checked=False, unchecked=False,
+    )
+    assert _selected_matcher(ns) == ("text", "Hi")

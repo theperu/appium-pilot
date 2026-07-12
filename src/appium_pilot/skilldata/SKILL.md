@@ -156,6 +156,22 @@ e5 --gone
 Reports `PASS`/`FAIL`/`ERROR` per line + a summary; exit 0 all passed, 1 any
 failed, 2 nothing failed but a check couldn't be evaluated.
 
+Visual baseline (needs the `visual` extra: `pip install 'appium-pilot[visual]'`).
+Screenshot a ref (or the whole screen) and compare it to a stored golden image.
+
+```bash
+appium-pilot expect e5 --baseline card.png --update   # capture/overwrite the golden
+appium-pilot expect e5 --baseline card.png            # compare; exit 0 within threshold
+appium-pilot expect --baseline home.png               # no ref → full screen
+```
+
+Element-scoped baselines are the most stable (they ignore unrelated screen
+churn like the status-bar clock). Tuning: `--threshold` (max fraction of pixels
+allowed to differ, default 0.001) and `--pixel-threshold` (per-channel colour
+noise floor, default 16). On a mismatch it writes a diff image and reports the
+changed region; exit 1 over threshold, 2 if the baseline is missing (run
+`--update` first) or its size differs.
+
 ## App lifecycle
 
 ```bash
