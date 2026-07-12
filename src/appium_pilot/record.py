@@ -18,9 +18,9 @@ from appium_pilot.session import Session
 
 FLOW_VERSION = 1
 
-# Commands worth recording as flow steps. Everything else (snapshot, get, open,
-# session mgmt, devices, doctor, skills, video, capture) is read-only or meta and
-# is skipped — including `flow` itself, so replay never re-records.
+# Commands worth recording as flow steps. Everything else (snapshot, find, get,
+# open, session mgmt, devices, doctor, skills, video, capture) is read-only or
+# meta and is skipped — including `flow` itself, so replay never re-records.
 RECORDABLE = {
     "tap", "type", "clear", "scroll", "swipe", "press", "hide-keyboard",
     "wait", "url", "alert", "expect",

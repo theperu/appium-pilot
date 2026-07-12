@@ -1,5 +1,6 @@
 """E2E: read-only inspection commands."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,20 @@ pytestmark = pytest.mark.e2e
 
 def test_snapshot_has_refs(fresh):
     assert 'ref="e1"' in fresh.snapshot()
+
+
+def test_find_returns_actionable_snapshot_ref(fresh, app):
+    # The discovery → act round-trip: `find` must return the *same* ref a full
+    # snapshot assigns (full-screen numbering), and that ref must resolve live
+    # off find's persisted refmap. Only a device can prove both at once.
+    query, snap_ref = app.find_case(fresh)
+    assert snap_ref, "scenario could not resolve a snapshot ref to find"
+    rc, out, _ = fresh.run("find", query)
+    assert rc == 0
+    refs = re.findall(r'ref="(e\d+)"', out)
+    assert snap_ref in refs, f"find({query!r}) -> {refs}, expected to include {snap_ref}"
+    # the returned ref is actionable (find persisted the full refmap, tap reads it)
+    assert fresh.run("tap", snap_ref, check=False)[0] == 0
 
 
 def test_snapshot_raw(fresh):

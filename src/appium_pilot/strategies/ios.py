@@ -56,6 +56,12 @@ class IOSStrategy(PlatformStrategy):
         # iOS precedence: label > value > name (mirrors the sossoldi fallback).
         return attrs.get("label") or attrs.get("value") or attrs.get("name") or ""
 
+    def searchable_text(self, attrs: dict) -> str:
+        # All three visible-text attrs back find_by_text (name/label/value
+        # CONTAINS); kept_attrs drops label when it duplicates name, so joining
+        # what survives is exactly what the snapshot shows.
+        return " ".join(v for k in ("name", "label", "value") if (v := attrs.get(k)))
+
     def best_locator(self, attrs: dict, xpath: str) -> Locator:
         text = self.display_text(attrs)
         name = attrs.get("name")

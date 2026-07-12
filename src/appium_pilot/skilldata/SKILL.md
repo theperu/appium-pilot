@@ -49,6 +49,9 @@ appium-pilot source            # raw page source, no refs
 appium-pilot screenshot        # save PNG, prints path — then Read the file to view it
 appium-pilot screenshot e7     # screenshot just one element
 
+appium-pilot find "Login"      # just the refs of elements whose visible text matches
+appium-pilot find "OK" --case-sensitive   # exact case (default is case-insensitive)
+
 appium-pilot get e3            # a ref's current state, e.g. text="hi" enabled=true
 appium-pilot get e3 bounds     # read one raw attribute (bounds, focused, ...)
 ```
@@ -57,6 +60,16 @@ Read an element by its attributes in the snapshot: `text`/`desc`/`id` on
 Android, `name`/`label`/`value` on iOS. Use `get <ref>` to re-check one
 element's live state (e.g. confirm a field's text after `type`) without paying
 for a full re-`snapshot`.
+
+When you already know what you're after, prefer `find "<text>"` over a full
+`snapshot`: it prints only the matching lines (case-insensitive substring on the
+visible label) and nothing else, so it's far cheaper than re-reading the whole
+screen. The refs it returns are numbered exactly as `snapshot` numbers them and
+are immediately usable — `find "Login"` then `tap e7`. `find` never scrolls and
+never asserts: it searches the current screen and exits 0 even on no match
+(`count=0`, with a hint to `scroll --to-text` if the element may be off-screen).
+To *assert* something is present, use `expect`; to bring an off-screen element
+into view, use `scroll --to-text`.
 
 ## Recording
 

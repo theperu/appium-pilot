@@ -9,7 +9,7 @@ Each kept node also records its best locator so later commands can re-find it.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Optional
 
 from appium_pilot.strategies import Locator, PlatformStrategy
@@ -25,11 +25,15 @@ class PNode:
     children: list["PNode"] = field(default_factory=list)
 
 
-def build_snapshot(
-    page_source: str, strategy: PlatformStrategy, with_bounds: bool = False
-) -> tuple[str, dict[str, Locator]]:
-    """Return (filtered_xml, refmap). With `with_bounds`, each node also carries
-    an ``at="cx,cy"`` pixel center (opt-in; costs tokens)."""
+def build_nodes(
+    page_source: str, strategy: PlatformStrategy
+) -> tuple[list[PNode], dict[str, Locator]]:
+    """Walk the live page source into the filtered PNode tree + refmap.
+
+    The shared spine of `snapshot` (which serializes the tree) and `find` (which
+    filters it): both go through here so refs, folding, and dedupe are identical
+    no matter which command built them — `e7` means the same element either way.
+    """
     root = ET.fromstring(page_source)
     refmap: dict[str, Locator] = {}
     counter = [0]
@@ -68,8 +72,36 @@ def build_snapshot(
     _fold(top, strategy, refmap)
     refmap = _renumber(top, refmap)
     _dedupe(top, strategy, refmap)
+    return top, refmap
+
+
+def build_snapshot(
+    page_source: str, strategy: PlatformStrategy, with_bounds: bool = False
+) -> tuple[str, dict[str, Locator]]:
+    """Return (filtered_xml, refmap). With `with_bounds`, each node also carries
+    an ``at="cx,cy"`` pixel center (opt-in; costs tokens)."""
+    top, refmap = build_nodes(page_source, strategy)
     xml = _serialize(top, with_bounds=with_bounds)
     return xml, refmap
+
+
+def flatten(nodes: list[PNode]) -> list[PNode]:
+    """Pre-order flatten of the PNode tree — `find` scans this to match refs."""
+    out: list[PNode] = []
+    for n in nodes:
+        out.append(n)
+        out.extend(flatten(n.children))
+    return out
+
+
+def render_matches(nodes: list[PNode]) -> str:
+    """Serialize `find`'s matches as a flat list of self-closing lines.
+
+    Children are dropped so a matched parent and a matched child each print as
+    their own ref-addressable line; nesting is meaningless once the result is a
+    filtered subset of the screen.
+    """
+    return _serialize([replace(n, children=[]) for n in nodes])
 
 
 def _fold(nodes: list[PNode], strategy: PlatformStrategy, refmap: dict[str, Locator]) -> None:

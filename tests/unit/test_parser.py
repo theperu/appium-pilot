@@ -7,7 +7,7 @@ import pytest
 from appium_pilot.cli import _normalize_session_flag, build_parser
 
 EXPECTED = {
-    "open", "close", "snapshot", "source", "screenshot", "tap", "type", "clear", "get", "expect",
+    "open", "close", "snapshot", "source", "screenshot", "tap", "type", "clear", "get", "find", "expect",
     "swipe", "scroll", "press", "hide-keyboard", "wait", "alert", "url", "video-start", "video-stop",
     "launch", "activate", "terminate", "background", "install", "remove", "reset",
     "orientation", "devices", "list", "close-all", "kill-all", "skills", "doctor",

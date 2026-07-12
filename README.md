@@ -103,7 +103,7 @@ All v1 commands implemented and smoke-tested end-to-end on an iOS Simulator
 `open` · `close` · `list` · `close-all` · `kill-all` · `snapshot [--raw]` ·
 `source` · `screenshot [ref]` · `devices` · `doctor` · `tap` · `type` · `clear` ·
 `swipe` · `scroll` · `press` · `hide-keyboard` · `orientation` · `wait` · `get` ·
-`expect` · `flow save`/`replay`/`show`/`clear` · `url` · `alert` ·
+`find` · `expect` · `flow save`/`replay`/`show`/`clear` · `url` · `alert` ·
 `video-start`/`video-stop` ·
 `launch`/`activate`/`terminate`/`background`/`install`/`remove`/`reset`.
 

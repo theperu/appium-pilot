@@ -96,6 +96,11 @@ class AndroidApp:
         cli.run("tap", cli.ref_for(r'(text|desc)="Views"'))
         return "Buttons"  # an item in the Views submenu
 
+    def find_case(self, cli) -> tuple[str, str]:
+        """A query unique to one element + that element's snapshot ref, to prove
+        `find` returns the same ref (full-screen numbering) and it's actionable."""
+        return "Views", cli.ref_for(r'(text|desc)="Views"')
+
     # wait --gone: tap into Views so a root-only item disappears
     # ("Preference" exists on the root list but not inside the Views submenu).
     def disappearing_ref(self, cli) -> str:
@@ -145,6 +150,10 @@ class IOSApp:
         cli.run("type", cli.ref_for(r'name="IntegerB"'), "3")
         cli.run("tap", cli.ref_for(r'name="ComputeSumButton"'))
         return "5"  # Answer label becomes the sum
+
+    def find_case(self, cli) -> tuple[str, str]:
+        """See AndroidApp.find_case. IntegerA is a unique, tappable field."""
+        return "IntegerA", cli.ref_for(r'name="IntegerA"')
 
     # No reliably-disappearing element in TestApp's single screen.
     def disappearing_ref(self, cli):

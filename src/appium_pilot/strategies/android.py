@@ -80,6 +80,11 @@ class AndroidStrategy(PlatformStrategy):
     def display_text(self, attrs: dict) -> str:
         return attrs.get("text") or attrs.get("content-desc") or ""
 
+    def searchable_text(self, attrs: dict) -> str:
+        # Kept attrs rename content-desc → desc; both are visible label sources
+        # and both back find_by_text (textContains OR descriptionContains).
+        return " ".join(v for k in ("text", "desc") if (v := attrs.get(k)))
+
     def best_locator(self, attrs: dict, xpath: str) -> Locator:
         text = attrs.get("text")
         desc = attrs.get("content-desc")

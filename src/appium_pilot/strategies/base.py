@@ -65,6 +65,16 @@ class PlatformStrategy(ABC):
         """Human-visible label for the node, per platform attribute precedence."""
 
     @abstractmethod
+    def searchable_text(self, attrs: dict) -> str:
+        """Visible text for `find`'s matching, read from the *kept* attrs.
+
+        Reads the trimmed attrs (post-fold), so it matches exactly what the
+        snapshot shows — a button that folded in its label matches on that
+        label. Its field set mirrors `find_by_text` (an OR across the visible
+        text attributes), so `find` and text-based resolution agree.
+        """
+
+    @abstractmethod
     def best_locator(self, attrs: dict, xpath: str) -> Locator:
         """Most robust locator for the node, per platform preference order."""
 
