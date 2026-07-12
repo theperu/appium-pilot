@@ -34,6 +34,10 @@ appium-pilot snapshot
 # Act on a ref from the latest snapshot
 appium-pilot tap e7
 
+# Record a flow once, then replay it forever (deterministic regression)
+appium-pilot flow save checkout.yaml
+appium-pilot flow replay checkout.yaml
+
 # Multiple parallel sessions
 appium-pilot -s=checkout open --platform ios --app /path/to/MyApp.app
 ```
@@ -98,7 +102,8 @@ All v1 commands implemented and smoke-tested end-to-end on an iOS Simulator
 
 `open` · `close` · `list` · `close-all` · `kill-all` · `snapshot [--raw]` ·
 `source` · `screenshot [ref]` · `devices` · `doctor` · `tap` · `type` · `clear` ·
-`swipe` · `scroll` · `press` · `hide-keyboard` · `orientation` · `wait` ·
+`swipe` · `scroll` · `press` · `hide-keyboard` · `orientation` · `wait` · `get` ·
+`expect` · `flow save`/`replay`/`show`/`clear` · `url` · `alert` ·
 `video-start`/`video-stop` ·
 `launch`/`activate`/`terminate`/`background`/`install`/`remove`/`reset`.
 

@@ -30,6 +30,8 @@ class Session:
     # ref -> locator dict; the most recent snapshot's mapping.
     refmap: dict = field(default_factory=dict)
     recording: bool = False
+    # Ordered log of ref-free steps this session ran (for `flow save`/`replay`).
+    log: list = field(default_factory=list)
 
     # -- persistence --------------------------------------------------------
 
@@ -62,6 +64,15 @@ class Session:
                 code=2,
             )
         return Locator.from_dict(entry)
+
+    # -- command log (flow record/replay) -----------------------------------
+
+    def append_step(self, step: dict) -> None:
+        """Record one ref-free step; persisted with the session handle."""
+        self.log.append(step)
+
+    def clear_log(self) -> None:
+        self.log = []
 
     # -- helpers ------------------------------------------------------------
 

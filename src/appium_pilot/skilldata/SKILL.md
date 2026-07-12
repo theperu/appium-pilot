@@ -172,6 +172,43 @@ noise floor, default 16). On a mismatch it writes a diff image and reports the
 changed region; exit 1 over threshold, 2 if the baseline is missing (run
 `--update` first) or its size differs.
 
+## Flow: record once, replay forever
+
+Every action you run is logged to the session automatically (snapshots and other
+reads are not). Explore a flow once, save it, and replay it later —
+deterministically, with no snapshots and no per-step decisions. Each step stores
+the element's captured locator, **not** the throwaway `eN`, so replay re-finds the
+element on a fresh run.
+
+```bash
+# drive the flow once the normal way, then:
+appium-pilot flow save checkout.yaml    # dump the session's log to a YAML flow file
+appium-pilot flow show                  # list the recorded steps (or: flow show FILE)
+appium-pilot flow clear                 # reset the log to start recording a fresh flow
+
+appium-pilot flow replay checkout.yaml  # re-run every step against the current session
+```
+
+Replay **self-heals**: if a step's saved locator no longer matches, it falls back
+to the display text captured at record time (and reports that it healed, so you
+know to re-record). Exit codes mirror `expect`: **0** all steps ran and every
+embedded assertion held, **1** a recorded `expect` failed (a regression — the app
+is in the wrong state), **2** a step could not run (element gone even after
+healing, or the driver refused). Replay stops at the first failing step;
+`--continue` powers through best-effort.
+
+Because recorded `expect` steps are re-checked on replay, a saved flow *is* a
+regression test — interleave assertions while exploring, then commit the YAML:
+
+```bash
+appium-pilot tap e4
+appium-pilot wait --text "Cart"
+appium-pilot expect e9 --text "1 item"   # recorded; re-checked on every replay
+appium-pilot flow save checkout.yaml     # commit as a deterministic regression test
+```
+
+Flow files are YAML — readable, and safe to hand-edit or diff in review.
+
 ## App lifecycle
 
 ```bash

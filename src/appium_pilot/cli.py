@@ -12,7 +12,7 @@ import sys
 
 from selenium.common.exceptions import WebDriverException
 
-from appium_pilot import __version__
+from appium_pilot import __version__, record
 from appium_pilot.commands import (
     alert_cmd,
     app_cmd,
@@ -20,6 +20,7 @@ from appium_pilot.commands import (
     devices_cmd,
     doctor_cmd,
     expect_cmd,
+    flow_cmd,
     gesture_cmd,
     get_cmd,
     open_cmd,
@@ -53,6 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
         type_cmd,
         get_cmd,
         expect_cmd,
+        flow_cmd,
         gesture_cmd,
         wait_cmd,
         url_cmd,
@@ -87,6 +89,9 @@ def main(argv: list[str] | None = None) -> None:
 
     try:
         args.func(args)
+        # Log the just-succeeded command as a flow step (best-effort; never fails
+        # the command). Read-only/meta commands are skipped inside record.
+        record.record_command(args)
     except CommandError as exc:
         fail(str(exc), code=exc.code, **exc.data)
     except WebDriverException as exc:

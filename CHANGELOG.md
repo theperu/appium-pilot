@@ -4,6 +4,19 @@ All notable changes to this project are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `flow` command — record once, replay forever. Every mutating command a session
+  runs is logged; `flow save FILE.yaml` dumps it to a portable, ref-free flow
+  (each step stores the element's captured locator, not the throwaway `eN`).
+  `flow replay FILE.yaml` re-runs it against a live session, self-healing to the
+  captured display text when a locator drifts. Recorded `expect` steps are
+  re-checked, so a saved flow doubles as a deterministic regression test; exit
+  codes mirror `expect` (0 pass / 1 assertion failed / 2 step unrunnable).
+  `flow show` and `flow clear` inspect and reset the recorded log.
+- `PyYAML` is now a runtime dependency (flow files are YAML).
+
 ## [0.2.0] - 2026-07-05
 
 ### Added
